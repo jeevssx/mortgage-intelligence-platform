@@ -76,6 +76,15 @@ Reviewers confirm each item, or comment on why it does not apply.
 - [ ] `docs/architecture/data-dictionary.md` and ERD updated if the model changed.
 - [ ] Money columns are `NUMERIC(15,2)`; delinquency logic matches the canonical rule.
 
+**DevSecOps (added M2)**
+- [ ] CI is green: secret scan, migration job, and (from M3) tests + `pip-audit`.
+- [ ] No new gitleaks allowlist entries without a written justification.
+- [ ] Dependabot / dependency-review findings of severity critical are fixed or have an issue linked.
+- [ ] New config values are added to the relevant `.env.example` with placeholder values only.
+- [ ] DB access in code uses the `mortgage_app` role, never `mortgage_owner` or a superuser.
+
+Controls and branch protection settings: [devsecops-baseline.md](../operations/devsecops-baseline.md).
+
 ---
 
 ## Documentation rules
