@@ -34,10 +34,33 @@ database_migrations:
     - changes:
         - database/**/*
 
+python-test:
+  stage: test
+  image: python:3.11
+  services:
+    - name: postgres:16
+      alias: postgres
+  variables:
+    POSTGRES_PASSWORD: ci-superuser-password
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq postgresql-client > /dev/null
+    - PGHOST=postgres PGUSER=postgres PGPASSWORD=$POSTGRES_PASSWORD psql -v ON_ERROR_STOP=1 -v owner_password=ci-owner -v app_password=ci-app -f database/schema/000_roles_and_database.sql
+    - POSTGRES_HOST=postgres POSTGRES_OWNER_PASSWORD=ci-owner bash database/scripts/reset-dev-db.sh
+  script:
+    - cd analytics/mortgage-analytics-service
+    - pip install -r requirements.txt pip-audit
+    - pip-audit -r requirements.txt
+    - INTEGRATION_DB=1 POSTGRES_HOST=postgres POSTGRES_PASSWORD=ci-app pytest -v --cov=src --cov-report=term
+    - python -m coverage report --include="src/analytics/*,src/services/*" --fail-under=80
+  rules:
+    - changes:
+        - analytics/mortgage-analytics-service/**/*
+        - database/**/*
+
 sca:
   stage: security
   script:
-    - echo "Dependency scanning runs in python-test via pip-audit (M3); GitLab Dependency Scanning template added in M9"
+    - echo "pip-audit runs in python-test; GitLab Dependency Scanning template added in M9"
 
 docker-build:
   stage: build

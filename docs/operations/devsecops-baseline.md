@@ -24,7 +24,7 @@ Applied with the GitHub API (no tokens recorded here):
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["Secret scan (gitleaks)", "Migrations + seed on fresh PostgreSQL"]
+    "contexts": ["Secret scan (gitleaks)", "Migrations + seed on fresh PostgreSQL", "Analytics service tests"]
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {
