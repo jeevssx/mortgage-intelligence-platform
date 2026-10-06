@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /analytics/mortgage-analytics-service
+    schedule:
+      interval: weekly
+    target-branch: develop
+    labels: [dependencies, security]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: develop
+    labels: [dependencies, ci]
