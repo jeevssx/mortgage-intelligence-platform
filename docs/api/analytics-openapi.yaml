@@ -1,0 +1,750 @@
+openapi: 3.1.0
+info:
+  title: Mortgage Analytics Service
+  description: Portfolio analytics, normalization, and document upload for the Mortgage
+    Intelligence Platform.
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      tags:
+      - health
+      summary: Health
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/v1/analytics/portfolio-summary:
+    get:
+      tags:
+      - analytics
+      summary: Portfolio Summary
+      operationId: portfolio_summary_api_v1_analytics_portfolio_summary_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/analytics/delinquency:
+    get:
+      tags:
+      - analytics
+      summary: Delinquency
+      operationId: delinquency_api_v1_analytics_delinquency_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DelinquencyReport'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/analytics/borrowers/risk-summary:
+    get:
+      tags:
+      - analytics
+      summary: All Borrower Risk
+      operationId: all_borrower_risk_api_v1_analytics_borrowers_risk_summary_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowerRiskExport'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/analytics/borrowers/{borrower_external_id}/risk-summary:
+    get:
+      tags:
+      - analytics
+      summary: Borrower Risk Summary
+      operationId: borrower_risk_summary_api_v1_analytics_borrowers__borrower_external_id__risk_summary_get
+      parameters:
+      - name: borrower_external_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BOR-\d{3}$
+          examples:
+          - BOR-001
+          title: Borrower External Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowerRiskSummary'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/analytics/payment-trends:
+    get:
+      tags:
+      - analytics
+      summary: Payment Trends
+      operationId: payment_trends_api_v1_analytics_payment_trends_get
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          description: Inclusive start (paid date)
+          title: From
+        description: Inclusive start (paid date)
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          description: Inclusive end (paid date)
+          title: To
+        description: Inclusive end (paid date)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTrends'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/analytics/normalize:
+    post:
+      tags:
+      - analytics
+      summary: Normalize
+      description: Validate raw borrower/mortgage/payment records against the normalization
+        rules.
+      operationId: normalize_api_v1_analytics_normalize_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NormalizeRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NormalizeResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents/upload:
+    post:
+      tags:
+      - documents
+      summary: Upload Document
+      description: Upload a document to S3 and record its metadata. Accepts multipart
+        (preferred) or JSON with base64.
+      operationId: upload_document_api_v1_documents_upload_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                mortgageExternalId:
+                  type: string
+                  example: MTG-1001
+                documentType:
+                  type: string
+                  example: INCOME_VERIFICATION
+                file:
+                  type: string
+                  format: binary
+              type: object
+              required:
+              - mortgageExternalId
+              - documentType
+              - file
+          application/json:
+            schema:
+              properties:
+                mortgageExternalId:
+                  type: string
+                  title: Mortgageexternalid
+                documentType:
+                  type: string
+                  title: Documenttype
+                fileName:
+                  type: string
+                  title: Filename
+                contentBase64:
+                  type: string
+                  title: Contentbase64
+                contentType:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                  title: Contenttype
+              type: object
+              required:
+              - mortgageExternalId
+              - documentType
+              - fileName
+              - contentBase64
+              title: DocumentUploadJson
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUploadResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    BorrowerMortgage:
+      properties:
+        mortgageExternalId:
+          type: string
+          title: Mortgageexternalid
+        status:
+          type: string
+          title: Status
+        outstandingBalance:
+          type: number
+          title: Outstandingbalance
+      type: object
+      required:
+      - mortgageExternalId
+      - status
+      - outstandingBalance
+      title: BorrowerMortgage
+    BorrowerRisk:
+      properties:
+        borrowerExternalId:
+          type: string
+          title: Borrowerexternalid
+        totalMortgages:
+          type: integer
+          title: Totalmortgages
+        outstandingBalanceTotal:
+          type: number
+          title: Outstandingbalancetotal
+        delinquentMortgages:
+          type: integer
+          title: Delinquentmortgages
+        delinquentBalanceTotal:
+          type: number
+          title: Delinquentbalancetotal
+        maxDaysPastDue:
+          type: integer
+          title: Maxdayspastdue
+        riskLevel:
+          type: string
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          title: Risklevel
+      type: object
+      required:
+      - borrowerExternalId
+      - totalMortgages
+      - outstandingBalanceTotal
+      - delinquentMortgages
+      - delinquentBalanceTotal
+      - maxDaysPastDue
+      - riskLevel
+      title: BorrowerRisk
+    BorrowerRiskExport:
+      properties:
+        borrowers:
+          items:
+            $ref: '#/components/schemas/BorrowerRisk'
+          type: array
+          title: Borrowers
+        excludedBorrowers:
+          items:
+            type: string
+          type: array
+          title: Excludedborrowers
+          description: Borrowers flagged by normalization (e.g. missing email)
+        asOf:
+          type: string
+          title: Asof
+      type: object
+      required:
+      - borrowers
+      - excludedBorrowers
+      - asOf
+      title: BorrowerRiskExport
+    BorrowerRiskSummary:
+      properties:
+        borrowerExternalId:
+          type: string
+          title: Borrowerexternalid
+        totalMortgages:
+          type: integer
+          title: Totalmortgages
+        outstandingBalanceTotal:
+          type: number
+          title: Outstandingbalancetotal
+        delinquentMortgages:
+          type: integer
+          title: Delinquentmortgages
+        delinquentBalanceTotal:
+          type: number
+          title: Delinquentbalancetotal
+        maxDaysPastDue:
+          type: integer
+          title: Maxdayspastdue
+        riskLevel:
+          type: string
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          title: Risklevel
+        mortgages:
+          items:
+            $ref: '#/components/schemas/BorrowerMortgage'
+          type: array
+          title: Mortgages
+      type: object
+      required:
+      - borrowerExternalId
+      - totalMortgages
+      - outstandingBalanceTotal
+      - delinquentMortgages
+      - delinquentBalanceTotal
+      - maxDaysPastDue
+      - riskLevel
+      - mortgages
+      title: BorrowerRiskSummary
+    DelinquencyReport:
+      properties:
+        delinquentMortgages:
+          type: integer
+          title: Delinquentmortgages
+        delinquencyRate:
+          type: number
+          title: Delinquencyrate
+        delinquentBalanceTotal:
+          type: number
+          title: Delinquentbalancetotal
+        mortgages:
+          items:
+            $ref: '#/components/schemas/DelinquentMortgage'
+          type: array
+          title: Mortgages
+        asOf:
+          type: string
+          title: Asof
+      type: object
+      required:
+      - delinquentMortgages
+      - delinquencyRate
+      - delinquentBalanceTotal
+      - mortgages
+      - asOf
+      title: DelinquencyReport
+    DelinquentMortgage:
+      properties:
+        mortgageExternalId:
+          type: string
+          title: Mortgageexternalid
+        borrowerExternalId:
+          type: string
+          title: Borrowerexternalid
+        outstandingBalance:
+          type: number
+          title: Outstandingbalance
+        delinquentSince:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Delinquentsince
+        daysPastDue:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Dayspastdue
+        severity:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Severity
+      type: object
+      required:
+      - mortgageExternalId
+      - borrowerExternalId
+      - outstandingBalance
+      - delinquentSince
+      - daysPastDue
+      - severity
+      title: DelinquentMortgage
+    DocumentUploadResponse:
+      properties:
+        documentId:
+          type: string
+          title: Documentid
+        mortgageExternalId:
+          type: string
+          title: Mortgageexternalid
+        documentType:
+          type: string
+          title: Documenttype
+        fileName:
+          type: string
+          title: Filename
+        s3Key:
+          type: string
+          title: S3Key
+        sizeBytes:
+          type: integer
+          title: Sizebytes
+        uploadedAt:
+          type: string
+          title: Uploadedat
+        correlationId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Correlationid
+      type: object
+      required:
+      - documentId
+      - mortgageExternalId
+      - documentType
+      - fileName
+      - s3Key
+      - sizeBytes
+      - uploadedAt
+      - correlationId
+      title: DocumentUploadResponse
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+          title: Code
+        message:
+          type: string
+          title: Message
+        correlationId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Correlationid
+        timestamp:
+          type: string
+          title: Timestamp
+        details:
+          anyOf:
+          - items:
+              additionalProperties: true
+              type: object
+            type: array
+          - type: 'null'
+          title: Details
+      type: object
+      required:
+      - code
+      - message
+      - correlationId
+      - timestamp
+      title: ErrorResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HealthResponse:
+      properties:
+        status:
+          type: string
+          const: UP
+          title: Status
+        service:
+          type: string
+          title: Service
+      type: object
+      required:
+      - status
+      - service
+      title: HealthResponse
+    NormalizeRequest:
+      properties:
+        borrowers:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Borrowers
+        mortgages:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Mortgages
+        payments:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Payments
+      type: object
+      title: NormalizeRequest
+      description: Raw records (snake_case keys, as in the database) to validate.
+    NormalizeResponse:
+      properties:
+        valid:
+          type: boolean
+          title: Valid
+        counts:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Counts
+        warnings:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Warnings
+      type: object
+      required:
+      - valid
+      - counts
+      - warnings
+      title: NormalizeResponse
+    PaymentTrendBucket:
+      properties:
+        period:
+          type: string
+          title: Period
+          examples:
+          - 2026-01
+        postedAmount:
+          type: number
+          title: Postedamount
+        paymentCount:
+          type: integer
+          title: Paymentcount
+        onTimeRate:
+          type: number
+          title: Ontimerate
+      type: object
+      required:
+      - period
+      - postedAmount
+      - paymentCount
+      - onTimeRate
+      title: PaymentTrendBucket
+    PaymentTrends:
+      properties:
+        from:
+          type: string
+          title: From
+        to:
+          type: string
+          title: To
+        buckets:
+          items:
+            $ref: '#/components/schemas/PaymentTrendBucket'
+          type: array
+          title: Buckets
+      type: object
+      required:
+      - from
+      - to
+      - buckets
+      title: PaymentTrends
+    PortfolioSummary:
+      properties:
+        totalMortgages:
+          type: integer
+          title: Totalmortgages
+        activeMortgages:
+          type: integer
+          title: Activemortgages
+        delinquentMortgages:
+          type: integer
+          title: Delinquentmortgages
+        pendingMortgages:
+          type: integer
+          title: Pendingmortgages
+        closedMortgages:
+          type: integer
+          title: Closedmortgages
+        outstandingBalanceTotal:
+          type: number
+          title: Outstandingbalancetotal
+          description: Sum of outstanding_balance for ACTIVE + DELINQUENT
+        delinquentBalanceTotal:
+          type: number
+          title: Delinquentbalancetotal
+        delinquencyRate:
+          type: number
+          title: Delinquencyrate
+          description: DELINQUENT / (ACTIVE + DELINQUENT), 4 decimals
+        asOf:
+          type: string
+          title: Asof
+      type: object
+      required:
+      - totalMortgages
+      - activeMortgages
+      - delinquentMortgages
+      - pendingMortgages
+      - closedMortgages
+      - outstandingBalanceTotal
+      - delinquentBalanceTotal
+      - delinquencyRate
+      - asOf
+      title: PortfolioSummary
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+servers:
+- url: http://localhost:8000
+  description: Local
