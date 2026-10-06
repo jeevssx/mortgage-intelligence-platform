@@ -40,6 +40,15 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | --- | --- |
 | [DevSecOps baseline](docs/operations/devsecops-baseline.md) | Branch protection, secret scanning, SCA, CI checks |
 
+### Services
+
+| Service | Port | Status | Docs |
+| --- | --- | --- | --- |
+| mortgage-analytics-service (Python, FastAPI) | 8000 | M3, done | [README](analytics/mortgage-analytics-service/README.md) · [OpenAPI](docs/api/analytics-openapi.yaml) |
+| mortgage-service (Java, Spring Boot) | 8080 | M4 | [placeholder](services/mortgage-service/README.md) |
+| servicing-service (Java, Spring Boot) | 8081 | M4 | [placeholder](services/servicing-service/README.md) |
+| mortgage-knowledge-assistant (Python) | 8001 | M7 | [placeholder](ai/mortgage-knowledge-assistant/README.md) |
+
 ### Database
 
 Setup, migrations, seed data, and demo IDs: [database/README.md](database/README.md).
@@ -50,7 +59,7 @@ Setup, migrations, seed data, and demo IDs: [database/README.md](database/README
 | --- | --- | --- | --- |
 | M1 | Foundation & architecture | 1 | Done |
 | M2 | Agile & data foundation | 2 | Done |
-| M3 | Python analytics service | 3 | Not started |
+| M3 | Python analytics service | 3 | Done |
 | M4 | Java / Spring backend | 4–5 | Not started |
 | M5 | Microservices & events | 6 | Not started |
 | M6 | Security engineering | 7–8 | Not started |
@@ -83,4 +92,15 @@ tests/           api, integration, security, e2e suites
 
 1. Check your tools against the [minimum versions](docs/requirements/engineering-standards.md#minimum-tool-versions) and add your row to the [dev environment checklist](docs/requirements/dev-environment-checklist.md).
 2. Read the [Git workflow](docs/requirements/engineering-standards.md#git-workflow): branch from `develop` as `feature/<ticket>`, use `type(scope): summary` commits, and open a PR to `develop`.
-3. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).
+3. Set up PostgreSQL and load the seed data: [database/README.md](database/README.md#setup-powershell).
+4. Run the analytics service:
+
+   ```powershell
+   cd analytics/mortgage-analytics-service
+   python -m venv .venv; .\.venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   Copy-Item .env.example .env   # set POSTGRES_PASSWORD
+   uvicorn src.api.main:app --reload --port 8000
+   curl http://localhost:8000/health
+   ```
+5. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).

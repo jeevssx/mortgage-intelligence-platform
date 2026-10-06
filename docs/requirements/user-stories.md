@@ -324,7 +324,7 @@ so that I can see their total balance and delinquent loans.
 **Acceptance criteria**
 - Given `BOR-002` has one delinquent and one pending mortgage
   When I request `GET /api/v1/analytics/borrowers/BOR-002/risk-summary`
-  Then the response shows 2 mortgages, outstanding total 574000.00, and 1 delinquent mortgage.
+  Then the response shows 2 mortgages, serviced outstanding total 279000.00 (the PENDING mortgage is not yet funded), and 1 delinquent mortgage.
 - Given an unknown borrower
   When I request it
   Then the system returns `404`.
