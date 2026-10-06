@@ -18,6 +18,8 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [Team charter](docs/requirements/team-charter.md) | Roles, cadence, definition of done, escalation |
 | [Engineering standards](docs/requirements/engineering-standards.md) | Git workflow, commit and PR conventions, review checklist, PII rule, tool versions |
 | [Dev environment checklist](docs/requirements/dev-environment-checklist.md) | Tool validation per teammate |
+| [User stories](docs/requirements/user-stories.md) | 31 stories with Given/When/Then acceptance criteria |
+| [Sprint plans](docs/requirements/sprint-plans.md) | Sprint 1 and Sprint 2 |
 
 ### Architecture
 
@@ -28,13 +30,26 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [Deployment architecture](docs/architecture/deployment-architecture.md) | Environments, topology, security zones, trust boundaries |
 | [Data flow](docs/architecture/data-flow.md) | Document upload path, TLS termination, PII locations |
 | [Trust boundaries](docs/architecture/trust-boundaries.md) | Controls at each boundary |
+| [ERD](docs/architecture/erd.md) | Entity relationship diagram and cardinality |
+| [Data dictionary](docs/architecture/data-dictionary.md) | Columns, keys, constraints, indexes, roles |
+| [Query notes](docs/architecture/query-notes.md) | EXPLAIN output and index rationale |
+
+### Operations
+
+| Document | Description |
+| --- | --- |
+| [DevSecOps baseline](docs/operations/devsecops-baseline.md) | Branch protection, secret scanning, SCA, CI checks |
+
+### Database
+
+Setup, migrations, seed data, and demo IDs: [database/README.md](database/README.md).
 
 ## Milestones
 
 | ID | Milestone | Week | Status |
 | --- | --- | --- | --- |
 | M1 | Foundation & architecture | 1 | Done |
-| M2 | Agile & data foundation | 2 | Not started |
+| M2 | Agile & data foundation | 2 | Done |
 | M3 | Python analytics service | 3 | Not started |
 | M4 | Java / Spring backend | 4–5 | Not started |
 | M5 | Microservices & events | 6 | Not started |
