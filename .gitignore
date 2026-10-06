@@ -1,0 +1,61 @@
+# --- Secrets / local environment ---
+.env
+*.env
+.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.jks
+credentials
+.aws/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# --- Java ---
+target/
+build/
+.gradle/
+*.class
+.m2/
+
+# --- Node / TypeScript ---
+node_modules/
+dist/
+npm-debug.log*
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/settings.json
+.vscode/launch.json
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Logs / local data ---
+*.log
+logs/
+pgdata/
+
+# --- Terraform ---
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
