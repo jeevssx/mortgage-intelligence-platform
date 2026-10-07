@@ -14,7 +14,7 @@ jobs:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Run gitleaks over full history
@@ -30,7 +30,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: critical
@@ -51,7 +51,7 @@ jobs:
       PGHOST: localhost
       PGPORT: "5432"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Create roles and database
         env:
           PGUSER: postgres
@@ -102,7 +102,7 @@ jobs:
       run:
         working-directory: analytics/mortgage-analytics-service
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
