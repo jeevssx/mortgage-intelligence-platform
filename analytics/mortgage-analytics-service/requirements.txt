@@ -14,5 +14,5 @@ python-multipart==0.0.32
 pytest==9.1.1
 pytest-cov==7.1.0
 httpx==0.28.1
-moto[s3,sns,sqs]==5.2.3
+moto[s3,sns,sqs]==5.2.4
 pyyaml==6.0.3
