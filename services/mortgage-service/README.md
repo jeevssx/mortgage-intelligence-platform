@@ -32,9 +32,9 @@ mvn test
 
 ## API
 
-All endpoints are under `/api/v1`. Full examples in
-[reference/sample-api-contracts.md](https://github.com/UID-Technologies/capstone-secondary-mortgage-intelligence-platform/blob/main/reference/sample-api-contracts.md)
-and [docs/api/postman/mortgage-service.json](../../docs/api/postman/mortgage-service.json).
+All endpoints are under `/api/v1`. OpenAPI: [docs/api/mortgage-service-openapi.yaml](../../docs/api/mortgage-service-openapi.yaml).
+Postman: [docs/api/postman/mortgage-service.json](../../docs/api/postman/mortgage-service.json).
+Full examples in [reference/sample-api-contracts.md](https://github.com/UID-Technologies/capstone-secondary-mortgage-intelligence-platform/blob/main/reference/sample-api-contracts.md).
 
 | Method | Path | Notes |
 | --- | --- | --- |
@@ -60,6 +60,14 @@ and [docs/api/postman/mortgage-service.json](../../docs/api/postman/mortgage-ser
    same key on the same path returns `409 DUPLICATE_REQUEST` instead of double-posting.
 
 This service does **not** recompute `delinquency` rows — see ADR-001.
+
+### Lifecycle events (M5)
+
+Publishes `MortgageCreated` and `LoanApproved` on mortgage creation, `PaymentReceived` /
+`PaymentMissed` on payment posting, to the SNS topic in `SNS_TOPIC_MORTGAGE_EVENTS`. If that
+variable is unset, publishing is a silent no-op (used in tests and any environment without the
+event backbone). Catalog and schemas: [docs/architecture/event-catalog.md](../../docs/architecture/event-catalog.md).
+Publish failures are logged at `ERROR` and never fail the HTTP request — see ADR-002.
 
 ### Errors
 

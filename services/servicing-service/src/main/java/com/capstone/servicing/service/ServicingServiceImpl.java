@@ -4,10 +4,13 @@ import com.capstone.servicing.dto.DelinquencyResponse;
 import com.capstone.servicing.dto.ServicingEventRequest;
 import com.capstone.servicing.dto.ServicingHistoryEvent;
 import com.capstone.servicing.dto.ServicingHistoryResponse;
+import com.capstone.servicing.configuration.CorrelationIdHolder;
 import com.capstone.servicing.entity.Delinquency;
 import com.capstone.servicing.entity.Mortgage;
 import com.capstone.servicing.entity.ServicingHistory;
 import com.capstone.servicing.exception.NotFoundException;
+import com.capstone.servicing.messaging.EventEnvelope;
+import com.capstone.servicing.messaging.EventPublisher;
 import com.capstone.servicing.repository.DelinquencyRepository;
 import com.capstone.servicing.repository.MortgageRepository;
 import com.capstone.servicing.repository.ServicingHistoryRepository;
@@ -16,20 +19,26 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ServicingServiceImpl implements ServicingService {
 
+    private static final String LOAN_DELINQUENT_EVENT_TYPE = "LOAN_DELINQUENT";
+
     private final MortgageRepository mortgageRepository;
     private final ServicingHistoryRepository servicingHistoryRepository;
     private final DelinquencyRepository delinquencyRepository;
+    private final EventPublisher eventPublisher;
 
     public ServicingServiceImpl(MortgageRepository mortgageRepository,
                                  ServicingHistoryRepository servicingHistoryRepository,
-                                 DelinquencyRepository delinquencyRepository) {
+                                 DelinquencyRepository delinquencyRepository,
+                                 EventPublisher eventPublisher) {
         this.mortgageRepository = mortgageRepository;
         this.servicingHistoryRepository = servicingHistoryRepository;
         this.delinquencyRepository = delinquencyRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -68,6 +77,15 @@ public class ServicingServiceImpl implements ServicingService {
         event.setEventType(request.eventType());
         event.setDescription(request.description());
         servicingHistoryRepository.save(event);
+
+        if (LOAN_DELINQUENT_EVENT_TYPE.equals(request.eventType())) {
+            delinquencyRepository.findByMortgage(mortgage).ifPresentOrElse(
+                    delinquency -> eventPublisher.publish(EventEnvelope.of("LoanDelinquent", CorrelationIdHolder.get(), Map.of(
+                            "mortgageExternalId", mortgageExternalId,
+                            "daysPastDue", delinquency.getDaysPastDue(),
+                            "severity", delinquency.getSeverity().name()))),
+                    () -> { /* no delinquency row yet; nothing to publish */ });
+        }
     }
 
     private Mortgage findMortgageOrThrow(String mortgageExternalId) {

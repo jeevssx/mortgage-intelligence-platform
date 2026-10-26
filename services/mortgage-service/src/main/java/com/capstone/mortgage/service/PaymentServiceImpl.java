@@ -11,6 +11,8 @@ import com.capstone.mortgage.entity.ServicingHistory;
 import com.capstone.mortgage.exception.ConflictException;
 import com.capstone.mortgage.exception.NotFoundException;
 import com.capstone.mortgage.mapper.PaymentMapper;
+import com.capstone.mortgage.messaging.EventEnvelope;
+import com.capstone.mortgage.messaging.EventPublisher;
 import com.capstone.mortgage.repository.IdempotencyRecordRepository;
 import com.capstone.mortgage.repository.MortgageRepository;
 import com.capstone.mortgage.repository.PaymentRepository;
@@ -25,6 +27,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 /**
  * Owns the payment-posting transaction described in M4 task 4.2: a single @Transactional method
@@ -41,14 +44,17 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final ServicingHistoryRepository servicingHistoryRepository;
     private final IdempotencyRecordRepository idempotencyRecordRepository;
+    private final EventPublisher eventPublisher;
 
     public PaymentServiceImpl(MortgageRepository mortgageRepository, PaymentRepository paymentRepository,
                                ServicingHistoryRepository servicingHistoryRepository,
-                               IdempotencyRecordRepository idempotencyRecordRepository) {
+                               IdempotencyRecordRepository idempotencyRecordRepository,
+                               EventPublisher eventPublisher) {
         this.mortgageRepository = mortgageRepository;
         this.paymentRepository = paymentRepository;
         this.servicingHistoryRepository = servicingHistoryRepository;
         this.idempotencyRecordRepository = idempotencyRecordRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -90,8 +96,22 @@ public class PaymentServiceImpl implements PaymentService {
             idempotencyRecordRepository.save(record);
         }
 
+        String correlationId = CorrelationIdHolder.get();
         log.info("Payment posted mortgageExternalId={} amount={} status={} correlationId={}",
-                mortgageExternalId, request.amount(), request.status(), CorrelationIdHolder.get());
+                mortgageExternalId, request.amount(), request.status(), correlationId);
+
+        if (request.status() == com.capstone.mortgage.entity.PaymentStatus.POSTED) {
+            eventPublisher.publish(EventEnvelope.of("PaymentReceived", correlationId, Map.of(
+                    "mortgageExternalId", mortgageExternalId,
+                    "amount", request.amount(),
+                    "paidDate", String.valueOf(request.paidDate()),
+                    "outstandingBalanceAfter", mortgage.getOutstandingBalance())));
+        } else if (request.status() == com.capstone.mortgage.entity.PaymentStatus.FAILED) {
+            eventPublisher.publish(EventEnvelope.of("PaymentMissed", correlationId, Map.of(
+                    "mortgageExternalId", mortgageExternalId,
+                    "dueDate", String.valueOf(request.dueDate()),
+                    "amount", request.amount())));
+        }
 
         return PaymentMapper.toResponse(savedPayment);
     }

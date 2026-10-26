@@ -1,0 +1,16 @@
+# Build for analytics/mortgage-analytics-service (M5). Build context must be the repo root:
+#   docker build -f docker/Dockerfile.analytics-service -t analytics-service .
+
+FROM python:3.11-slim
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+RUN useradd --system --create-home capstone
+WORKDIR /app
+COPY analytics/mortgage-analytics-service/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY analytics/mortgage-analytics-service/src ./src
+USER capstone
+EXPOSE 8000
+HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=5 \
+    CMD curl -sf http://localhost:8000/health || exit 1
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -21,7 +21,7 @@ esac
 PSQL=(psql -v ON_ERROR_STOP=1 -q)
 
 echo "Dropping domain tables in $PGDATABASE@$PGHOST:$PGPORT ..."
-"${PSQL[@]}" -c "DROP TABLE IF EXISTS idempotency_record, document, delinquency, servicing_history, payment, loan, mortgage, borrower CASCADE;"
+"${PSQL[@]}" -c "DROP TABLE IF EXISTS event_inbox, idempotency_record, document, delinquency, servicing_history, payment, loan, mortgage, borrower CASCADE;"
 
 for f in migrations/*.sql; do
   echo "Applying $f"

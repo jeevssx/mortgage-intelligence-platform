@@ -19,11 +19,23 @@ Run tests (in-memory H2, no PostgreSQL needed): `mvn test`.
 
 ## API
 
+OpenAPI: [docs/api/servicing-service-openapi.yaml](../../docs/api/servicing-service-openapi.yaml).
+Postman: [docs/api/postman/servicing-service.json](../../docs/api/postman/servicing-service.json).
+
 | Method | Path | Notes |
 | --- | --- | --- |
 | `GET` | `/api/v1/mortgages/{mortgageExternalId}/servicing-history` | events ordered by `event_time` ascending; 404 if mortgage unknown |
 | `GET` | `/api/v1/mortgages/{mortgageExternalId}/delinquency` | 404 if the mortgage has no delinquency row |
-| `POST` | `/api/v1/mortgages/{mortgageExternalId}/servicing-events` | internal event ingestion (e.g. document upload, future M5 SNS/SQS consumer) |
+| `POST` | `/api/v1/mortgages/{mortgageExternalId}/servicing-events` | internal event ingestion; `eventType=LOAN_DELINQUENT` also publishes `LoanDelinquent` |
+
+### Lifecycle events (M5)
+
+Polls `SQS_QUEUE_SERVICING_EVENTS` every `SQS_POLL_DELAY_MS` (default 2s) and records each
+`eventId` into `event_inbox` (idempotent dedupe) rather than re-deriving `servicing_history` —
+see "Why consumers don't duplicate servicing_history" in
+[docs/architecture/event-catalog.md](../../docs/architecture/event-catalog.md). If
+`SQS_QUEUE_SERVICING_EVENTS` is unset, the poller is disabled (used in tests). Operating the
+queue/DLQ: [docs/operations/messaging-runbook.md](../../docs/operations/messaging-runbook.md).
 
 Example (seed data, `database/README.md`):
 
