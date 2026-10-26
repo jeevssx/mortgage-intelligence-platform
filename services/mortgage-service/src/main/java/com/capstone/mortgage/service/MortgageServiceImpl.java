@@ -13,6 +13,8 @@ import com.capstone.mortgage.exception.ConflictException;
 import com.capstone.mortgage.exception.NotFoundException;
 import com.capstone.mortgage.mapper.LoanMapper;
 import com.capstone.mortgage.mapper.MortgageMapper;
+import com.capstone.mortgage.messaging.EventEnvelope;
+import com.capstone.mortgage.messaging.EventPublisher;
 import com.capstone.mortgage.repository.BorrowerRepository;
 import com.capstone.mortgage.repository.LoanRepository;
 import com.capstone.mortgage.repository.MortgageRepository;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 @Service
 public class MortgageServiceImpl implements MortgageService {
@@ -35,13 +38,16 @@ public class MortgageServiceImpl implements MortgageService {
     private final BorrowerRepository borrowerRepository;
     private final LoanRepository loanRepository;
     private final ServicingHistoryRepository servicingHistoryRepository;
+    private final EventPublisher eventPublisher;
 
     public MortgageServiceImpl(MortgageRepository mortgageRepository, BorrowerRepository borrowerRepository,
-                                LoanRepository loanRepository, ServicingHistoryRepository servicingHistoryRepository) {
+                                LoanRepository loanRepository, ServicingHistoryRepository servicingHistoryRepository,
+                                EventPublisher eventPublisher) {
         this.mortgageRepository = mortgageRepository;
         this.borrowerRepository = borrowerRepository;
         this.loanRepository = loanRepository;
         this.servicingHistoryRepository = servicingHistoryRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -85,6 +91,21 @@ public class MortgageServiceImpl implements MortgageService {
 
         log.info("Mortgage created mortgageExternalId={} correlationId={}",
                 savedMortgage.getMortgageExternalId(), CorrelationIdHolder.get());
+
+        String correlationId = CorrelationIdHolder.get();
+        eventPublisher.publish(EventEnvelope.of("MortgageCreated", correlationId, Map.of(
+                "mortgageExternalId", savedMortgage.getMortgageExternalId(),
+                "borrowerExternalId", borrower.getBorrowerExternalId(),
+                "originalAmount", savedMortgage.getOriginalAmount(),
+                "status", savedMortgage.getStatus().name())));
+
+        if (savedLoan != null && savedLoan.getUnderwritingDecision() == com.capstone.mortgage.entity.UnderwritingDecision.APPROVED) {
+            eventPublisher.publish(EventEnvelope.of("LoanApproved", correlationId, Map.of(
+                    "loanExternalId", savedLoan.getLoanExternalId(),
+                    "mortgageExternalId", savedMortgage.getMortgageExternalId(),
+                    "interestRate", savedLoan.getInterestRate(),
+                    "termMonths", savedLoan.getTermMonths())));
+        }
 
         return MortgageMapper.toResponse(savedMortgage, savedLoan);
     }
