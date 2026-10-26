@@ -1,0 +1,21 @@
+# Multi-stage build for services/mortgage-service (M5). Build context must be the repo root:
+#   docker build -f docker/Dockerfile.mortgage-service -t mortgage-service .
+
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+COPY services/mortgage-service/pom.xml ./pom.xml
+RUN mvn -q -B dependency:go-offline
+COPY services/mortgage-service/src ./src
+RUN mvn -q -B package -DskipTests
+
+FROM eclipse-temurin:21-jre
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+RUN addgroup --system capstone && adduser --system --ingroup capstone capstone
+WORKDIR /app
+COPY --from=build /build/target/mortgage-service-0.1.0.jar app.jar
+USER capstone
+EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
+    CMD curl -sf http://localhost:8080/actuator/health || exit 1
+ENTRYPOINT ["java", "-jar", "app.jar"]
