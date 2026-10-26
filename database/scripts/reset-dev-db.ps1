@@ -23,7 +23,7 @@ function Invoke-Psql([string[]]$PsqlArgs) {
 }
 
 Write-Host "Dropping domain tables in $($env:PGDATABASE)@$($env:PGHOST):$($env:PGPORT) ..."
-Invoke-Psql @('-c', 'DROP TABLE IF EXISTS idempotency_record, document, delinquency, servicing_history, payment, loan, mortgage, borrower CASCADE;')
+Invoke-Psql @('-c', 'DROP TABLE IF EXISTS event_inbox, idempotency_record, document, delinquency, servicing_history, payment, loan, mortgage, borrower CASCADE;')
 
 Get-ChildItem (Join-Path $dbRoot 'migrations') -Filter '*.sql' | Sort-Object Name | ForEach-Object {
     Write-Host "Applying $($_.Name)"
