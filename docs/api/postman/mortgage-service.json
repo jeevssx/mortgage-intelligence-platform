@@ -1,0 +1,76 @@
+{
+  "info": {
+    "name": "mortgage-service (M4)",
+    "description": "Manual test collection for services/mortgage-service, port 8080. Run against the seeded dev database (database/README.md).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/actuator/health" }
+    },
+    {
+      "name": "Create borrower",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/borrowers",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"borrowerExternalId\": \"BOR-010\",\n  \"firstName\": \"Alex\",\n  \"lastName\": \"Rivera\",\n  \"email\": \"alex.rivera@example.test\",\n  \"phone\": \"+1-555-0100\",\n  \"dateOfBirth\": \"1988-04-12\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get borrower",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/borrowers/BOR-001" }
+    },
+    {
+      "name": "Create mortgage (with loan)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/mortgages",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mortgageExternalId\": \"MTG-1010\",\n  \"borrowerExternalId\": \"BOR-001\",\n  \"originalAmount\": 320000.00,\n  \"outstandingBalance\": 318500.00,\n  \"originationDate\": \"2025-06-01\",\n  \"loan\": {\n    \"loanExternalId\": \"LOAN-2010\",\n    \"interestRate\": 0.0650,\n    \"termMonths\": 360,\n    \"underwritingDecision\": \"APPROVED\"\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Get mortgage",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mortgages/MTG-1001" }
+    },
+    {
+      "name": "List mortgages by borrower",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mortgages?borrowerId=BOR-001&page=0&size=20" }
+    },
+    {
+      "name": "Post payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Correlation-Id", "value": "m4-pay-001" },
+          { "key": "Idempotency-Key", "value": "pay-MTG-1001-2026-04-01" }
+        ],
+        "url": "{{baseUrl}}/api/v1/mortgages/MTG-1001/payments",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dueDate\": \"2026-04-01\",\n  \"paidDate\": \"2026-04-02\",\n  \"amount\": 1850.00,\n  \"status\": \"POSTED\"\n}"
+        }
+      }
+    },
+    {
+      "name": "List payments",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mortgages/MTG-1001/payments" }
+    },
+    {
+      "name": "Get mortgage (unknown -> 404)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mortgages/MTG-9999" }
+    }
+  ]
+}
