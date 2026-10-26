@@ -157,3 +157,14 @@ jobs:
         with:
           name: ${{ matrix.service }}-coverage
           path: services/${{ matrix.service }}/target/site/jacoco/jacoco.xml
+
+  docker-build:
+    name: Docker image build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [mortgage-service, servicing-service, analytics-service]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -f docker/Dockerfile.${{ matrix.service }} -t ${{ matrix.service }}:ci .
