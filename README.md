@@ -33,18 +33,22 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [ERD](docs/architecture/erd.md) | Entity relationship diagram and cardinality |
 | [Data dictionary](docs/architecture/data-dictionary.md) | Columns, keys, constraints, indexes, roles |
 | [Query notes](docs/architecture/query-notes.md) | EXPLAIN output and index rationale |
+| [Service ownership matrix](docs/architecture/service-ownership-matrix.md) | Tables/APIs/events owned per service |
+| [Event catalog](docs/architecture/event-catalog.md) | Lifecycle events, producers/consumers, schemas |
 
 ### Architecture decisions
 
 | Document | Description |
 | --- | --- |
 | [ADR-001](docs/adr/ADR-001-service-data-ownership.md) | Data ownership split between mortgage-service and servicing-service |
+| [ADR-002](docs/adr/ADR-002-microservice-decomposition.md) | Microservice decomposition and event backbone |
 
 ### Operations
 
 | Document | Description |
 | --- | --- |
 | [DevSecOps baseline](docs/operations/devsecops-baseline.md) | Branch protection, secret scanning, SCA, CI checks |
+| [Messaging runbook](docs/operations/messaging-runbook.md) | SNS/SQS/DLQ operations, LocalStack bootstrap, DLQ drill |
 
 ### Services
 
@@ -67,7 +71,7 @@ Setup, migrations, seed data, and demo IDs: [database/README.md](database/README
 | M2 | Agile & data foundation | 2 | Done |
 | M3 | Python analytics service | 3 | Done |
 | M4 | Java / Spring backend | 4–5 | Done |
-| M5 | Microservices & events | 6 | Not started |
+| M5 | Microservices & events | 6 | Done |
 | M6 | Security engineering | 7–8 | Not started |
 | M7 | AI / RAG assistant | 9 | Not started |
 | M8 | AWS & data platform | 10 | Not started |
@@ -117,4 +121,16 @@ tests/           api, integration, security, e2e suites
    cd ../servicing-service
    POSTGRES_PASSWORD=<your-local-password> mvn spring-boot:run   # port 8081
    ```
-6. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).
+6. Or run the full stack containerized, including LocalStack for SNS/SQS (M5):
+
+   ```bash
+   docker compose up --build -d
+   docker compose ps                       # all five services "healthy"
+   curl http://localhost:8080/actuator/health
+   curl http://localhost:8081/actuator/health
+   curl http://localhost:8000/health
+   ```
+
+   See [docs/operations/messaging-runbook.md](docs/operations/messaging-runbook.md) to publish a
+   test event or force a DLQ delivery.
+7. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).
