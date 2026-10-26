@@ -34,6 +34,12 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [Data dictionary](docs/architecture/data-dictionary.md) | Columns, keys, constraints, indexes, roles |
 | [Query notes](docs/architecture/query-notes.md) | EXPLAIN output and index rationale |
 
+### Architecture decisions
+
+| Document | Description |
+| --- | --- |
+| [ADR-001](docs/adr/ADR-001-service-data-ownership.md) | Data ownership split between mortgage-service and servicing-service |
+
 ### Operations
 
 | Document | Description |
@@ -45,8 +51,8 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | Service | Port | Status | Docs |
 | --- | --- | --- | --- |
 | mortgage-analytics-service (Python, FastAPI) | 8000 | M3, done | [README](analytics/mortgage-analytics-service/README.md) · [OpenAPI](docs/api/analytics-openapi.yaml) |
-| mortgage-service (Java, Spring Boot) | 8080 | M4 | [placeholder](services/mortgage-service/README.md) |
-| servicing-service (Java, Spring Boot) | 8081 | M4 | [placeholder](services/servicing-service/README.md) |
+| mortgage-service (Java, Spring Boot) | 8080 | M4, done | [README](services/mortgage-service/README.md) |
+| servicing-service (Java, Spring Boot) | 8081 | M4, done | [README](services/servicing-service/README.md) |
 | mortgage-knowledge-assistant (Python) | 8001 | M7 | [placeholder](ai/mortgage-knowledge-assistant/README.md) |
 
 ### Database
@@ -60,7 +66,7 @@ Setup, migrations, seed data, and demo IDs: [database/README.md](database/README
 | M1 | Foundation & architecture | 1 | Done |
 | M2 | Agile & data foundation | 2 | Done |
 | M3 | Python analytics service | 3 | Done |
-| M4 | Java / Spring backend | 4–5 | Not started |
+| M4 | Java / Spring backend | 4–5 | Done |
 | M5 | Microservices & events | 6 | Not started |
 | M6 | Security engineering | 7–8 | Not started |
 | M7 | AI / RAG assistant | 9 | Not started |
@@ -103,4 +109,12 @@ tests/           api, integration, security, e2e suites
    uvicorn src.api.main:app --reload --port 8000
    curl http://localhost:8000/health
    ```
-5. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).
+5. Run the Java services (Maven 3.9+, Java 17+):
+
+   ```bash
+   cd services/mortgage-service
+   POSTGRES_PASSWORD=<your-local-password> mvn spring-boot:run   # port 8080
+   cd ../servicing-service
+   POSTGRES_PASSWORD=<your-local-password> mvn spring-boot:run   # port 8081
+   ```
+6. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).
