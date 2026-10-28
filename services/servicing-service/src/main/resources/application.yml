@@ -35,3 +35,5 @@ capstone:
     aws-region: ${AWS_REGION:us-east-1}
     aws-endpoint-url: ${AWS_ENDPOINT_URL:}
     poll-delay-ms: ${SQS_POLL_DELAY_MS:2000}
+  security:
+    jwt-secret: ${JWT_SECRET:insecure-dev-only-shared-secret-please-override-in-prod-env}

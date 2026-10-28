@@ -43,11 +43,22 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [ADR-001](docs/adr/ADR-001-service-data-ownership.md) | Data ownership split between mortgage-service and servicing-service |
 | [ADR-002](docs/adr/ADR-002-microservice-decomposition.md) | Microservice decomposition and event backbone |
 
+### Security (M6)
+
+| Document | Description |
+| --- | --- |
+| [Security controls](docs/security/security-controls.md) | Auth, RBAC matrix, data classification, encryption, OWASP controls |
+| [Threat model](docs/security/threat-model.md) | STRIDE analysis against the M1 architecture and M5 event backbone |
+| [Risk register](docs/security/risk-register.md) | Tracked risks with likelihood/impact/owner |
+| [Vulnerability report](docs/security/vulnerability-report.md) | M6 pentest/SCA findings and remediation status |
+| [Remediation backlog](docs/security/remediation-backlog.md) | Prioritized fixes, linked to commits |
+
 ### Operations
 
 | Document | Description |
 | --- | --- |
-| [DevSecOps baseline](docs/operations/devsecops-baseline.md) | Branch protection, secret scanning, SCA, CI checks |
+| [DevSecOps baseline](docs/operations/devsecops-baseline.md) | Branch protection, secret scanning, SAST, SCA, CI checks |
+| [Operations runbook](docs/operations/runbook.md) | Secrets rotation and general operational procedures |
 | [Messaging runbook](docs/operations/messaging-runbook.md) | SNS/SQS/DLQ operations, LocalStack bootstrap, DLQ drill |
 
 ### Services
@@ -72,7 +83,7 @@ Setup, migrations, seed data, and demo IDs: [database/README.md](database/README
 | M3 | Python analytics service | 3 | Done |
 | M4 | Java / Spring backend | 4–5 | Done |
 | M5 | Microservices & events | 6 | Done |
-| M6 | Security engineering | 7–8 | Not started |
+| M6 | Security engineering | 7–8 | Done |
 | M7 | AI / RAG assistant | 9 | Not started |
 | M8 | AWS & data platform | 10 | Not started |
 | M9 | CI/CD, Terraform, observability | 11 | Not started |
@@ -85,6 +96,7 @@ docs/            requirements, architecture, ADRs, security, operations
 database/        schema, migrations, seed data, scripts
 services/        Java services: mortgage-service, servicing-service
 analytics/       Python mortgage-analytics-service
+clients/         TypeScript mortgage-api-consumer (M6 secure API consumer demo)
 ai/              mortgage-knowledge-assistant
 infrastructure/  Terraform
 docker/          container definitions
@@ -113,14 +125,17 @@ tests/           api, integration, security, e2e suites
    uvicorn src.api.main:app --reload --port 8000
    curl http://localhost:8000/health
    ```
-5. Run the Java services (Maven 3.9+, Java 17+):
+5. Run the Java services (Maven 3.9+, Java 17+). Set the **same** `JWT_SECRET` for both (M6
+   auth) or accept the insecure dev-only default (logs a warning, local use only):
 
    ```bash
    cd services/mortgage-service
-   POSTGRES_PASSWORD=<your-local-password> mvn spring-boot:run   # port 8080
+   JWT_SECRET=<32+ byte random value> POSTGRES_PASSWORD=<your-local-password> mvn spring-boot:run   # port 8080
    cd ../servicing-service
-   POSTGRES_PASSWORD=<your-local-password> mvn spring-boot:run   # port 8081
+   JWT_SECRET=<same value as above> POSTGRES_PASSWORD=<your-local-password> mvn spring-boot:run   # port 8081
    ```
+
+   Try the secure TypeScript consumer: [clients/mortgage-api-consumer/README.md](clients/mortgage-api-consumer/README.md).
 6. Or run the full stack containerized, including LocalStack for SNS/SQS (M5):
 
    ```bash

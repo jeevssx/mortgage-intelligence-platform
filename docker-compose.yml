@@ -90,6 +90,7 @@ services:
       AWS_REGION: us-east-1
       AWS_ENDPOINT_URL: http://localstack:4566
       SNS_TOPIC_MORTGAGE_EVENTS: arn:aws:sns:us-east-1:000000000000:capstone-mortgage-lifecycle-dev
+      JWT_SECRET: compose-dev-only-shared-jwt-secret-never-use-outside-this-stack
 
   servicing-service:
     build:
@@ -111,6 +112,7 @@ services:
       AWS_ENDPOINT_URL: http://localstack:4566
       SNS_TOPIC_MORTGAGE_EVENTS: arn:aws:sns:us-east-1:000000000000:capstone-mortgage-lifecycle-dev
       SQS_QUEUE_SERVICING_EVENTS: http://localstack:4566/000000000000/capstone-mortgage-servicing-dev
+      JWT_SECRET: compose-dev-only-shared-jwt-secret-never-use-outside-this-stack
 
   analytics-service:
     build:

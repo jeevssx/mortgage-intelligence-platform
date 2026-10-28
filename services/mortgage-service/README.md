@@ -69,6 +69,18 @@ variable is unset, publishing is a silent no-op (used in tests and any environme
 event backbone). Catalog and schemas: [docs/architecture/event-catalog.md](../../docs/architecture/event-catalog.md).
 Publish failures are logged at `ERROR` and never fail the HTTP request — see ADR-002.
 
+### Authentication & RBAC (M6)
+
+`POST /api/v1/auth/login` (public) issues a JWT; every other endpoint requires
+`Authorization: Bearer <jwt>`. Seed users and the full RBAC matrix:
+[docs/security/security-controls.md](../../docs/security/security-controls.md). `JWT_SECRET`
+must match `servicing-service`'s value exactly (no inter-service call to validate a token).
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" \
+  -d '{"username":"servicing@capstone.local","password":"Capstone#2026"}'
+```
+
 ### Errors
 
 Standard envelope (`code`, `message`, `correlationId`, `timestamp`); validation failures return

@@ -6,6 +6,7 @@ import com.capstone.mortgage.service.BorrowerService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,6 +20,7 @@ public class BorrowerController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'UNDERWRITER')")
     public ResponseEntity<BorrowerResponse> create(@Valid @RequestBody BorrowerRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(borrowerService.create(request));
     }

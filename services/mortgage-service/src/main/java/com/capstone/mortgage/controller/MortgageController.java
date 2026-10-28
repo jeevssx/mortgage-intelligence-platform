@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,6 +23,7 @@ public class MortgageController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'UNDERWRITER')")
     public ResponseEntity<MortgageResponse> create(@Valid @RequestBody MortgageRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(mortgageService.create(request));
     }

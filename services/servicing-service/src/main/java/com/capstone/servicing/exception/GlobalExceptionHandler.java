@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,6 +36,24 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining("; "));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of("VALIDATION_FAILED", message, correlationId));
+    }
+
+    // @PreAuthorize throws these during controller method invocation, before Spring Security's
+    // filter-level handlers can see them — see mortgage-service's GlobalExceptionHandler.
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        String correlationId = CorrelationIdHolder.get();
+        log.warn("FORBIDDEN ({}) correlationId={}", ex.getMessage(), correlationId);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of("FORBIDDEN", "Role does not permit this operation", correlationId));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
+        String correlationId = CorrelationIdHolder.get();
+        log.warn("UNAUTHORIZED ({}) correlationId={}", ex.getMessage(), correlationId);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of("UNAUTHORIZED", "Missing or invalid Bearer token", correlationId));
     }
 
     @ExceptionHandler(Exception.class)
