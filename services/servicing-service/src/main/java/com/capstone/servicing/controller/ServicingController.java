@@ -1,6 +1,7 @@
 package com.capstone.servicing.controller;
 
 import com.capstone.servicing.dto.DelinquencyResponse;
+import com.capstone.servicing.dto.MortgageLookupResponse;
 import com.capstone.servicing.dto.ServicingEventRequest;
 import com.capstone.servicing.dto.ServicingHistoryResponse;
 import com.capstone.servicing.service.ServicingService;
@@ -28,6 +29,11 @@ public class ServicingController {
     @GetMapping("/delinquency")
     public DelinquencyResponse getDelinquency(@PathVariable String mortgageExternalId) {
         return servicingService.getDelinquency(mortgageExternalId);
+    }
+
+    @GetMapping("/fast-lookup")
+    public MortgageLookupResponse getFastLookup(@PathVariable String mortgageExternalId) {
+        return servicingService.getFastLookup(mortgageExternalId);
     }
 
     @PostMapping("/servicing-events")

@@ -9,6 +9,8 @@ import com.capstone.servicing.entity.Delinquency;
 import com.capstone.servicing.entity.Mortgage;
 import com.capstone.servicing.entity.ServicingHistory;
 import com.capstone.servicing.exception.NotFoundException;
+import com.capstone.servicing.dto.MortgageLookupResponse;
+import com.capstone.servicing.lookup.MortgageLookupRepository;
 import com.capstone.servicing.messaging.EventEnvelope;
 import com.capstone.servicing.messaging.EventPublisher;
 import com.capstone.servicing.repository.DelinquencyRepository;
@@ -30,15 +32,18 @@ public class ServicingServiceImpl implements ServicingService {
     private final ServicingHistoryRepository servicingHistoryRepository;
     private final DelinquencyRepository delinquencyRepository;
     private final EventPublisher eventPublisher;
+    private final MortgageLookupRepository lookupRepository;
 
     public ServicingServiceImpl(MortgageRepository mortgageRepository,
                                  ServicingHistoryRepository servicingHistoryRepository,
                                  DelinquencyRepository delinquencyRepository,
-                                 EventPublisher eventPublisher) {
+                                 EventPublisher eventPublisher,
+                                 MortgageLookupRepository lookupRepository) {
         this.mortgageRepository = mortgageRepository;
         this.servicingHistoryRepository = servicingHistoryRepository;
         this.delinquencyRepository = delinquencyRepository;
         this.eventPublisher = eventPublisher;
+        this.lookupRepository = lookupRepository;
     }
 
     @Override
@@ -86,6 +91,19 @@ public class ServicingServiceImpl implements ServicingService {
                             "severity", delinquency.getSeverity().name()))),
                     () -> { /* no delinquency row yet; nothing to publish */ });
         }
+    }
+
+    @Override
+    public MortgageLookupResponse getFastLookup(String mortgageExternalId) {
+        if (!lookupRepository.isEnabled()) {
+            throw new NotFoundException("LOOKUP_NOT_CONFIGURED",
+                    "DynamoDB fast lookup is not configured (DYNAMODB_TABLE_MORTGAGE_LOOKUP unset)");
+        }
+        return lookupRepository.find(mortgageExternalId)
+                .map(r -> new MortgageLookupResponse(r.mortgageExternalId(), r.borrowerExternalId(),
+                        r.status(), r.outstandingBalance(), "DynamoDB"))
+                .orElseThrow(() -> new NotFoundException("MORTGAGE_NOT_FOUND",
+                        "Mortgage " + mortgageExternalId + " was not found in the fast lookup table"));
     }
 
     private Mortgage findMortgageOrThrow(String mortgageExternalId) {

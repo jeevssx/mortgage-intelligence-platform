@@ -3,6 +3,8 @@ package com.capstone.servicing.messaging;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.capstone.servicing.entity.EventInbox;
+import com.capstone.servicing.lookup.MortgageLookupRecord;
+import com.capstone.servicing.lookup.MortgageLookupRepository;
 import com.capstone.servicing.repository.EventInboxRepository;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -40,12 +42,15 @@ public class SqsEventConsumer {
 
     private final ObjectMapper objectMapper;
     private final EventInboxRepository eventInboxRepository;
+    private final MortgageLookupRepository lookupRepository;
     private final String queueUrl;
     private final SqsClient sqsClient;
 
-    public SqsEventConsumer(ObjectMapper objectMapper, EventInboxRepository eventInboxRepository, Environment env) {
+    public SqsEventConsumer(ObjectMapper objectMapper, EventInboxRepository eventInboxRepository,
+                             MortgageLookupRepository lookupRepository, Environment env) {
         this.objectMapper = objectMapper;
         this.eventInboxRepository = eventInboxRepository;
+        this.lookupRepository = lookupRepository;
         this.queueUrl = env.getProperty("capstone.messaging.sqs-queue-servicing-events");
         this.sqsClient = buildClient(env);
     }
@@ -116,8 +121,42 @@ public class SqsEventConsumer {
         } else {
             eventInboxRepository.save(new EventInbox(eventId, eventType));
             log.info("Processed event eventType={} eventId={}", eventType, eventId);
+            writeThroughToLookup(eventType, node.get("payload"));
         }
         ackMessage(message);
+    }
+
+    /** M8 task 8.4: keeps MortgageLookup-dev in sync with the same events already flowing through
+     * SQS, instead of adding a second write path. No-ops if DynamoDB isn't configured. */
+    private void writeThroughToLookup(String eventType, JsonNode payload) {
+        if (!lookupRepository.isEnabled() || payload == null) {
+            return;
+        }
+        String mortgageExternalId = textOrNull(payload, "mortgageExternalId");
+        if (mortgageExternalId == null) {
+            return;
+        }
+        switch (eventType) {
+            case "MortgageCreated" -> lookupRepository.upsert(new MortgageLookupRecord(
+                    mortgageExternalId,
+                    textOrNull(payload, "borrowerExternalId"),
+                    textOrNull(payload, "status"),
+                    decimalOrZero(payload, "originalAmount")));
+            case "PaymentReceived" -> lookupRepository.updateBalance(
+                    mortgageExternalId, decimalOrZero(payload, "outstandingBalanceAfter"));
+            case "LoanDelinquent" -> lookupRepository.updateStatus(mortgageExternalId, "DELINQUENT");
+            default -> { /* LoanApproved/PaymentMissed don't change a MortgageLookup field */ }
+        }
+    }
+
+    private static String textOrNull(JsonNode payload, String field) {
+        JsonNode value = payload.get(field);
+        return value == null || value.isNull() ? null : value.asText();
+    }
+
+    private static java.math.BigDecimal decimalOrZero(JsonNode payload, String field) {
+        JsonNode value = payload.get(field);
+        return value == null || value.isNull() ? java.math.BigDecimal.ZERO : new java.math.BigDecimal(value.asText());
     }
 
     private void ackMessage(Message message) {

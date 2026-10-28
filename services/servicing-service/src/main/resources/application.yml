@@ -37,3 +37,5 @@ capstone:
     poll-delay-ms: ${SQS_POLL_DELAY_MS:2000}
   security:
     jwt-secret: ${JWT_SECRET:insecure-dev-only-shared-secret-please-override-in-prod-env}
+  lookup:
+    dynamodb-table-mortgage-lookup: ${DYNAMODB_TABLE_MORTGAGE_LOOKUP:}
