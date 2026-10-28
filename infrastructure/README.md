@@ -10,7 +10,7 @@ infrastructure/
 │   ├── scripts/          PostgreSQL -> S3 raw -> curated transform -> reconciliation (M8 task 8.5-8.6)
 │   └── schemas/          expected curated-zone column schema
 ├── localstack/           bootstrap.sh — SNS/SQS/S3/DynamoDB setup for local dev (M5, M8)
-└── terraform/            reserved for M9 (not yet built)
+└── terraform/            modules + dev/test/prod environments (M9) — see terraform/README.md
 ```
 
 Everything under `aws/` and `data-pipeline/` targets [LocalStack](https://localstack.cloud/) by
