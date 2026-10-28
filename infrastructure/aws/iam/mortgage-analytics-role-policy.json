@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DocumentsBucketReadWrite",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Resource": "arn:aws:s3:::capstone-mortgage-docs-dev/mortgages/*"
+    },
+    {
+      "Sid": "AnalyticsBucketReadWrite",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+      "Resource": [
+        "arn:aws:s3:::capstone-mortgage-analytics-dev",
+        "arn:aws:s3:::capstone-mortgage-analytics-dev/raw/pg-export/*",
+        "arn:aws:s3:::capstone-mortgage-analytics-dev/curated/*"
+      ]
+    },
+    {
+      "Sid": "PublishDocumentUploadedEvent",
+      "Effect": "Allow",
+      "Action": "sns:Publish",
+      "Resource": "arn:aws:sns:us-east-1:*:capstone-mortgage-lifecycle-dev"
+    }
+  ]
+}
