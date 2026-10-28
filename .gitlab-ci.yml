@@ -77,7 +77,18 @@ sast:
     - docker:27-dind
   script:
     - docker run --rm -v "$CI_PROJECT_DIR:/src" returntocorp/semgrep:latest
-      semgrep --config=auto --error --severity=ERROR /src/services /src/analytics /src/clients
+      semgrep --config=auto --error --severity=ERROR /src/services /src/analytics /src/clients /src/ai
+
+python-test-ai-assistant:
+  stage: test
+  image: python:3.11
+  script:
+    - cd ai/mortgage-knowledge-assistant
+    - pip install -r requirements.txt
+    - pytest -v --cov=src --cov-report=term
+  rules:
+    - changes:
+        - ai/mortgage-knowledge-assistant/**/*
 
 sca:
   stage: security
@@ -86,7 +97,7 @@ sca:
     - docker:27-dind
   parallel:
     matrix:
-      - SERVICE: [mortgage-service, servicing-service, analytics-service]
+      - SERVICE: [mortgage-service, servicing-service, analytics-service, ai-assistant]
   script:
     - docker build -f docker/Dockerfile.$SERVICE -t $SERVICE:ci .
     # Report-only — see docs/operations/devsecops-baseline.md for why SCA doesn't hard-fail on
@@ -101,6 +112,6 @@ docker-build:
     - docker:27-dind
   parallel:
     matrix:
-      - SERVICE: [mortgage-service, servicing-service, analytics-service]
+      - SERVICE: [mortgage-service, servicing-service, analytics-service, ai-assistant]
   script:
     - docker build -f docker/Dockerfile.$SERVICE -t $SERVICE:ci .

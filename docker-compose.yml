@@ -133,3 +133,14 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       S3_BUCKET_DOCUMENTS: capstone-mortgage-docs-dev
+
+  ai-assistant:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ai-assistant
+    ports:
+      - "8001:8001"
+    environment:
+      # No LLM_API_KEY set: runs in local TF-IDF + extractive mode (see service README) — no
+      # external API cost, no network dependency beyond the containers in this stack.
+      JWT_SECRET: compose-dev-only-shared-jwt-secret-never-use-outside-this-stack
