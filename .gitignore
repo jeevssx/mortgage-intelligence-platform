@@ -53,6 +53,9 @@ desktop.ini
 logs/
 pgdata/
 
+# --- AI assistant derived data ---
+ai/mortgage-knowledge-assistant/.index/
+
 # --- Terraform ---
 .terraform/
 *.tfstate
