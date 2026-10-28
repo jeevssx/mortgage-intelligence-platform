@@ -47,10 +47,13 @@ services:
   localstack:
     image: localstack/localstack:3
     environment:
-      SERVICES: sns,sqs,s3
+      SERVICES: sns,sqs,s3,dynamodb,lambda,iam,logs
       DEFAULT_REGION: us-east-1
     ports:
       - "4566:4566"
+    volumes:
+      # Lambda's docker executor needs this to spin up execution containers (M8 task 8.3).
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]
       interval: 5s
@@ -63,13 +66,19 @@ services:
       localstack:
         condition: service_healthy
     volumes:
-      - ./infrastructure/localstack:/scripts:ro
+      - ./infrastructure:/infrastructure:ro
     environment:
       AWS_ENDPOINT_URL: http://localstack:4566
       AWS_REGION: us-east-1
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
-    entrypoint: ["bash", "/scripts/bootstrap.sh"]
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -euo pipefail
+        yum install -y -q zip >/dev/null
+        bash /infrastructure/localstack/bootstrap.sh
+        bash /infrastructure/aws/lambda/doc-processor/deploy-local.sh
 
   mortgage-service:
     build:
@@ -113,6 +122,7 @@ services:
       SNS_TOPIC_MORTGAGE_EVENTS: arn:aws:sns:us-east-1:000000000000:capstone-mortgage-lifecycle-dev
       SQS_QUEUE_SERVICING_EVENTS: http://localstack:4566/000000000000/capstone-mortgage-servicing-dev
       JWT_SECRET: compose-dev-only-shared-jwt-secret-never-use-outside-this-stack
+      DYNAMODB_TABLE_MORTGAGE_LOOKUP: MortgageLookup-dev
 
   analytics-service:
     build:
