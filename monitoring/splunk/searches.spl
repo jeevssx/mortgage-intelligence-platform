@@ -1,0 +1,35 @@
+
+# Saved searches for mortgage_dev — one per SLI in docs/operations/slo.md.
+# Each service logs structured JSON (guides/standards.md); fields below assume Splunk's
+# automatic JSON field extraction (service, correlationId, level, message, status, durationMs).
+
+# --- Lookup by correlation ID (the example from the milestone spec) ---
+index=mortgage_dev correlationId="7c9e6679-7425-40de-944b-e07fc1f90ae7"
+| sort _time
+
+# --- Error rate, last hour, by service ---
+index=mortgage_dev level=ERROR earliest=-1h
+| stats count by service
+
+# --- Payment API success rate (SLI: 99.5% / 30d) ---
+index=mortgage_dev service=mortgage-service path="/api/v1/mortgages/*/payments" method=POST earliest=-30d
+| eval is_failure=if(status=500, 1, 0)
+| stats sum(is_failure) as failures, count as total
+| eval success_rate=round((total-failures)/total*100, 3)
+
+# --- Payment API p95 latency (SLI: < 500ms) ---
+index=mortgage_dev service=mortgage-service path="/api/v1/mortgages/*/payments" method=POST earliest=-5m
+| stats p95(durationMs) as p95_latency_ms
+
+# --- Request rate (dashboard panel) ---
+index=mortgage_dev earliest=-15m
+| timechart span=1m count by service
+
+# --- 5xx rate (dashboard panel) ---
+index=mortgage_dev status>=500 earliest=-15m
+| timechart span=1m count by service
+
+# --- DLQ depth (requires a scheduled script pushing SQS GetQueueAttributes into Splunk via HEC —
+#     not built here, same gap as the rest of HEC forwarding; placeholder search shape below) ---
+index=mortgage_dev sourcetype=sqs_queue_depth queue_name="capstone-mortgage-servicing-dlq-dev" earliest=-15m
+| timechart span=1m latest(approximate_number_of_messages) as dlq_depth
