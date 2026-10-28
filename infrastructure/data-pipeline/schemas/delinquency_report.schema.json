@@ -1,0 +1,14 @@
+{
+  "name": "delinquency_report",
+  "version": 1,
+  "description": "Curated zone schema for curated/delinquency_report/ (M8 task 8.5). One row per mortgage, joined with its delinquency record (null delinquency fields if the mortgage has never been delinquent).",
+  "columns": [
+    { "name": "mortgage_external_id", "type": "string", "nullable": false, "example": "MTG-1002" },
+    { "name": "status", "type": "string", "nullable": false, "example": "DELINQUENT" },
+    { "name": "outstanding_balance", "type": "double", "nullable": false, "example": 308500.0 },
+    { "name": "days_past_due", "type": "int", "nullable": true, "example": 45 },
+    { "name": "severity", "type": "string", "nullable": true, "example": "MODERATE" },
+    { "name": "delinquent_since", "type": "date", "nullable": true, "example": "2026-01-10" },
+    { "name": "as_of_date", "type": "date", "nullable": false, "example": "2026-03-15" }
+  ]
+}

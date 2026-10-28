@@ -1,0 +1,18 @@
+{
+  "_description": "M8 task 8.1 mini exercise — the kind of policy a service role starts with if nobody scopes it. See docs/architecture/aws-iam-matrix.md for the before/after diff and why each line here is wrong.",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TooBroad",
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "AlsoTooBroad",
+      "Effect": "Allow",
+      "Action": ["dynamodb:*", "sqs:*", "sns:*"],
+      "Resource": "*"
+    }
+  ]
+}

@@ -176,6 +176,29 @@ jobs:
       - name: Tests (builds the vector store from the real corpus, no API key needed)
         run: pytest -v --cov=src --cov-report=term-missing
 
+  data-platform-tests:
+    name: M8 data platform tests (Lambda + pipeline)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component:
+          - infrastructure/aws/lambda/doc-processor
+          - infrastructure/data-pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        working-directory: ${{ matrix.component }}
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      - name: Tests (moto-mocked AWS, no live LocalStack or PostgreSQL needed)
+        working-directory: ${{ matrix.component }}
+        run: pytest -v
+
   docker-build:
     name: Docker image build
     runs-on: ubuntu-latest
@@ -195,7 +218,7 @@ jobs:
       - name: Run semgrep
         run: |
           docker run --rm -v "$PWD:/src" returntocorp/semgrep:latest \
-            semgrep --config=auto --error --severity=ERROR /src/services /src/analytics /src/clients
+            semgrep --config=auto --error --severity=ERROR /src/services /src/analytics /src/clients /src/ai /src/infrastructure
 
   sca-images:
     name: SCA (trivy image scan)

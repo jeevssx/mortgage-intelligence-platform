@@ -56,6 +56,9 @@ pgdata/
 # --- AI assistant derived data ---
 ai/mortgage-knowledge-assistant/.index/
 
+# --- Lambda build artifacts ---
+infrastructure/aws/lambda/**/function.zip
+
 # --- Terraform ---
 .terraform/
 *.tfstate

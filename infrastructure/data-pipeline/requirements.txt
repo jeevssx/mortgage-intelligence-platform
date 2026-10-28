@@ -1,0 +1,4 @@
+boto3==1.43.108
+pandas==3.0.6
+pyarrow==26.0.0
+psycopg2-binary==2.9.13

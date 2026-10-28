@@ -77,7 +77,7 @@ sast:
     - docker:27-dind
   script:
     - docker run --rm -v "$CI_PROJECT_DIR:/src" returntocorp/semgrep:latest
-      semgrep --config=auto --error --severity=ERROR /src/services /src/analytics /src/clients /src/ai
+      semgrep --config=auto --error --severity=ERROR /src/services /src/analytics /src/clients /src/ai /src/infrastructure
 
 python-test-ai-assistant:
   stage: test
@@ -89,6 +89,22 @@ python-test-ai-assistant:
   rules:
     - changes:
         - ai/mortgage-knowledge-assistant/**/*
+
+python-test-data-platform:
+  stage: test
+  image: python:3.11
+  parallel:
+    matrix:
+      - COMPONENT: [infrastructure/aws/lambda/doc-processor, infrastructure/data-pipeline]
+  script:
+    - cd $COMPONENT
+    - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+    - pytest -v
+  rules:
+    - changes:
+        - infrastructure/aws/**/*
+        - infrastructure/data-pipeline/**/*
 
 sca:
   stage: security

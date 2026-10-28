@@ -114,4 +114,13 @@ class ServicingControllerTest {
         org.assertj.core.api.Assertions.assertThat(
                 servicingHistoryRepository.findByMortgageOrderByEventTimeAsc(active).size()).isEqualTo((int) before + 1);
     }
+
+    @Test
+    void getFastLookup_withoutDynamoDbConfigured_returns404() throws Exception {
+        // DYNAMODB_TABLE_MORTGAGE_LOOKUP is unset in the test profile — see
+        // MortgageLookupRepository and docs/architecture/aws-iam-matrix.md (M8 task 8.4).
+        mockMvc.perform(get("/api/v1/mortgages/MTG-1001/fast-lookup"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("LOOKUP_NOT_CONFIGURED"));
+    }
 }

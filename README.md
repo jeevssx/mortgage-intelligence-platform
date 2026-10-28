@@ -35,6 +35,7 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [Query notes](docs/architecture/query-notes.md) | EXPLAIN output and index rationale |
 | [Service ownership matrix](docs/architecture/service-ownership-matrix.md) | Tables/APIs/events owned per service |
 | [Event catalog](docs/architecture/event-catalog.md) | Lifecycle events, producers/consumers, schemas |
+| [AWS IAM matrix](docs/architecture/aws-iam-matrix.md) | Least-privilege roles for the analytics, API, and Lambda components |
 
 ### Architecture decisions
 
@@ -42,6 +43,7 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | --- | --- |
 | [ADR-001](docs/adr/ADR-001-service-data-ownership.md) | Data ownership split between mortgage-service and servicing-service |
 | [ADR-002](docs/adr/ADR-002-microservice-decomposition.md) | Microservice decomposition and event backbone |
+| [ADR-003](docs/adr/ADR-003-kinesis-vs-sqs-only.md) | Why M8 didn't add a Kinesis stream |
 
 ### Security (M6)
 
@@ -60,6 +62,7 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [DevSecOps baseline](docs/operations/devsecops-baseline.md) | Branch protection, secret scanning, SAST, SCA, CI checks |
 | [Operations runbook](docs/operations/runbook.md) | Secrets rotation and general operational procedures |
 | [Messaging runbook](docs/operations/messaging-runbook.md) | SNS/SQS/DLQ operations, LocalStack bootstrap, DLQ drill |
+| [Data pipeline runbook](docs/operations/data-pipeline-runbook.md) | PostgreSQL → S3 → curated pipeline, reconciliation, schema drift |
 
 ### AI (M7)
 
@@ -92,7 +95,7 @@ Setup, migrations, seed data, and demo IDs: [database/README.md](database/README
 | M5 | Microservices & events | 6 | Done |
 | M6 | Security engineering | 7–8 | Done |
 | M7 | AI / RAG assistant | 9 | Done |
-| M8 | AWS & data platform | 10 | Not started |
+| M8 | AWS & data platform | 10 | Done |
 | M9 | CI/CD, Terraform, observability | 11 | Not started |
 | M10 | Testing & production readiness | 12 | Not started |
 
@@ -105,7 +108,7 @@ services/        Java services: mortgage-service, servicing-service
 analytics/       Python mortgage-analytics-service
 clients/         TypeScript mortgage-api-consumer (M6 secure API consumer demo)
 ai/              mortgage-knowledge-assistant
-infrastructure/  Terraform
+infrastructure/  AWS IAM/Lambda, data pipeline scripts (M8), LocalStack bootstrap, Terraform (M9)
 docker/          container definitions
 monitoring/      dashboards and alerts
 tests/           api, integration, security, e2e suites
@@ -155,7 +158,9 @@ tests/           api, integration, security, e2e suites
    curl -X POST http://localhost:8001/api/v1/assistant/ask -H "Content-Type: application/json" \
      -d '{"question": "What happens when a payment is 30 days late?"}'
    ```
-7. Or run the full stack containerized, including LocalStack for SNS/SQS (M5):
+7. Or run the full stack containerized, including LocalStack for SNS/SQS (M5) and S3/DynamoDB/
+   Lambda (M8 — the `localstack-init` container also deploys and wires the document-processor
+   Lambda automatically):
 
    ```bash
    docker compose up --build -d
@@ -167,5 +172,7 @@ tests/           api, integration, security, e2e suites
    ```
 
    See [docs/operations/messaging-runbook.md](docs/operations/messaging-runbook.md) to publish a
-   test event or force a DLQ delivery.
+   test event or force a DLQ delivery, and
+   [docs/operations/data-pipeline-runbook.md](docs/operations/data-pipeline-runbook.md) to run
+   the PostgreSQL → S3 → curated pipeline.
 8. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).
