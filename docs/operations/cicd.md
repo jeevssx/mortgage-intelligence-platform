@@ -1,14 +1,14 @@
-# CI/CD pipeline guide (M9)
+# CI/CD pipeline guide (M9, E2E stage added in M10)
 
 Canonical pipeline: [.gitlab-ci.yml](../../.gitlab-ci.yml) (GitLab is this capstone's reference
 CI/CD platform per the curriculum). [.github/workflows/ci.yml](../../.github/workflows/ci.yml)
-mirrors the build/test/scan stages for teams on GitHub, minus the deploy stage (registry push
+mirrors every stage through E2E Tests for teams on GitHub, minus the deploy stage (registry push
 and `terraform plan` are written in GitLab syntax specifically — see "Deploy" below).
 
 ## Stages
 
 ```text
-Build → Unit Test → SAST → SCA → Secret Scan → Container Build → Container Scan → Integration Tests → Deploy
+Build → Unit Test → SAST → SCA → Secret Scan → Container Build → Container Scan → Integration Tests → E2E Tests → Deploy
 ```
 
 | Stage | Jobs | Gate type |
@@ -21,6 +21,7 @@ Build → Unit Test → SAST → SCA → Secret Scan → Container Build → Con
 | Container Build | `docker-build` | Hard — must build |
 | Container Scan | `container_scan` (Trivy, scans the exact built image) | **Report-only** — see below |
 | Integration Tests | `integration_test` | Hard |
+| E2E Tests | `e2e_test` (Playwright + Cucumber, `tests/e2e/`) | Hard — see below |
 | Deploy | `deploy_dev` (auto), `deploy_test` (manual), `deploy_prod_plan` (manual, plan only) | See below |
 
 ## Why SCA/Container Scan are report-only, not "fail on Critical"
@@ -43,6 +44,20 @@ partial fix already applied — the one Spring Boot patch-level bump that *was* 
 `integration_test` brings up Postgres + LocalStack + both Java services via `docker-compose.yml`
 and exercises the real HTTP API — health checks, then a genuine login + authenticated GET — not
 mocks. Verified locally (not just assumed to work under CI) before being added to the pipeline.
+
+## E2E Tests
+
+`e2e_test` brings up the full stack including `ai-assistant` (the one service `integration_test`
+above doesn't need) and runs the five mandatory user journeys — see
+[tests/e2e/README.md](../../tests/e2e/README.md) for the journeys, the Playwright/Cucumber
+API-level approach (no UI exists), and the Node-version/rate-limit gotchas it documents. This is
+a **hard gate**, unlike SCA/container scan: these are first-party behavioral assertions against
+code this project controls, not third-party CVE noise. Running this suite live (not just adding
+it to the YAML) is what found and fixed two real bugs before this pipeline job existed — a JWT
+signing-algorithm mismatch between mortgage-service and ai-assistant, and a test-suite-induced
+login rate-limit exhaustion — both described in the git history around the `tests/e2e` commits.
+The HTML report (`tests/e2e/reports/cucumber-report.html`) is uploaded as a pipeline artifact on
+every run, pass or fail.
 
 ## Deploy
 
