@@ -168,3 +168,28 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build image
         run: docker build -f docker/Dockerfile.${{ matrix.service }} -t ${{ matrix.service }}:ci .
+
+  sast:
+    name: SAST (semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run semgrep
+        run: |
+          docker run --rm -v "$PWD:/src" returntocorp/semgrep:latest \
+            semgrep --config=auto --error --severity=ERROR /src/services /src/analytics /src/clients
+
+  sca-images:
+    name: SCA (trivy image scan)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [mortgage-service, servicing-service, analytics-service]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -f docker/Dockerfile.${{ matrix.service }} -t ${{ matrix.service }}:ci .
+      - name: Scan image (report-only — see docs/operations/devsecops-baseline.md for why SCA doesn't hard-fail on framework CVEs)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest \
+            image --scanners vuln --severity HIGH,CRITICAL --exit-code 0 ${{ matrix.service }}:ci

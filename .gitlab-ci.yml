@@ -70,10 +70,29 @@ java-test:
     - changes:
         - services/**/*
 
+sast:
+  stage: security
+  image: docker:27
+  services:
+    - docker:27-dind
+  script:
+    - docker run --rm -v "$CI_PROJECT_DIR:/src" returntocorp/semgrep:latest
+      semgrep --config=auto --error --severity=ERROR /src/services /src/analytics /src/clients
+
 sca:
   stage: security
+  image: docker:27
+  services:
+    - docker:27-dind
+  parallel:
+    matrix:
+      - SERVICE: [mortgage-service, servicing-service, analytics-service]
   script:
-    - echo "pip-audit runs in python-test; GitLab Dependency Scanning template added in M9"
+    - docker build -f docker/Dockerfile.$SERVICE -t $SERVICE:ci .
+    # Report-only — see docs/operations/devsecops-baseline.md for why SCA doesn't hard-fail on
+    # framework CVEs (several current findings require a Spring Boot 4.x major upgrade to fix).
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest
+      image --scanners vuln --severity HIGH,CRITICAL --exit-code 0 $SERVICE:ci
 
 docker-build:
   stage: build
