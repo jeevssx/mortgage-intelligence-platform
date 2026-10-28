@@ -36,3 +36,33 @@ LocalStack locally, IAM role in a real deployment).
 5. **No scheduled rotation cadence is enforced yet** (no secrets manager / rotation automation in
    this capstone build). A real deployment should put secrets in a managed store (AWS Secrets
    Manager / Parameter Store) with automatic rotation; out of scope for M6, tracked for M8/M9.
+
+## Rollback (M9)
+
+Pipeline: [cicd.md](./cicd.md). Images are pushed tagged with the commit SHA
+(`$CI_REGISTRY_IMAGE/<service>:$CI_COMMIT_SHORT_SHA>`), never `:latest` — that's what makes
+rollback a known-good re-deploy rather than a guess.
+
+1. **Identify the last known-good SHA.** Check the deploy stage's pipeline history for the most
+   recent successful `deploy_test` (or `deploy_dev`) run before the bad one, and note its
+   `$CI_COMMIT_SHORT_SHA`.
+2. **Re-deploy that tag**, not a new build from a reverted commit — rebuilding can pick up an
+   unrelated dependency update between now and then. Re-run the `deploy_*` job for the known-good
+   SHA (GitLab: "Retry" on that specific historical job, or manually `docker pull`/redeploy that
+   tag in the target environment).
+3. **Database migrations are forward-only in this project** (`database/README.md`: "Never edit a
+   merged migration; add `003_*.sql`"). A rollback that needs an old migration undone requires a
+   new migration that reverses it — there is no automatic `migrate down`. Check whether the bad
+   deploy included a migration before assuming a pure image rollback is sufficient.
+4. **JWT_SECRET rotation and rollback don't mix well** — if the bad deploy also rotated
+   `JWT_SECRET` (see "JWT_SECRET rotation" above), rolling back the image alone leaves the new
+   secret in place and all tokens from before the rotation still invalid. Roll back the secret
+   too, in the same step, not as an afterthought.
+5. **Verify after rollback**: health checks on both Java services, then the same login +
+   authenticated GET check `integration_test` runs in CI (`docs/operations/cicd.md`), against
+   the rolled-back environment specifically.
+
+## Incident response
+
+See [incident-response.md](./incident-response.md) for the escalation path during an active
+incident, and [slo.md](./slo.md) for the SLOs an incident might be breaching.
