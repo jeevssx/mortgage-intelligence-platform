@@ -36,3 +36,7 @@ capstone:
     sns-topic-mortgage-events: ${SNS_TOPIC_MORTGAGE_EVENTS:}
     aws-region: ${AWS_REGION:us-east-1}
     aws-endpoint-url: ${AWS_ENDPOINT_URL:}
+  security:
+    jwt-secret: ${JWT_SECRET:insecure-dev-only-shared-secret-please-override-in-prod-env}
+    jwt-issuer: ${JWT_ISSUER:capstone-mortgage-auth}
+    jwt-expiry-seconds: ${JWT_EXPIRY_SECONDS:3600}
