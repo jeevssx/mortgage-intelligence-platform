@@ -100,3 +100,20 @@ Delinquency rate (canonical formula) = 3 / (6 + 3) = **0.3333**.
 SELECT mortgage_external_id, status FROM mortgage WHERE mortgage_external_id IN ('MTG-1001','MTG-1002');
 -- MTG-1001 ACTIVE, MTG-1002 DELINQUENT
 ```
+
+## App users (M6)
+
+`seed/seed_app_users.sql` loads one synthetic login per security role
+([standards.md#security-roles-m6](https://github.com/UID-Technologies/capstone-secondary-mortgage-intelligence-platform/blob/main/guides/standards.md#security-roles-m6)),
+used by `mortgage-service`'s `POST /api/v1/auth/login`. **Password for every seed user:
+`Capstone#2026`** — dev/test only, never use outside local development.
+
+| Username | Role |
+| --- | --- |
+| `admin@capstone.local` | `ADMIN` |
+| `underwriter@capstone.local` | `UNDERWRITER` |
+| `servicing@capstone.local` | `SERVICING_AGENT` |
+| `risk@capstone.local` | `RISK_ANALYST` |
+| `support@capstone.local` | `SUPPORT` |
+
+RBAC matrix and token details: [docs/security/security-controls.md](../docs/security/security-controls.md).
