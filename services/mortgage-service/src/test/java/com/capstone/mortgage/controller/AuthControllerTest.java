@@ -88,4 +88,15 @@ class AuthControllerTest {
         mockMvc.perform(get("/api/v1/borrowers/BOR-001").header("Authorization", "Bearer not-a-real-jwt"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void actuatorHealthProbeGroups_arePublic_withoutAToken() throws Exception {
+        // Regression test for docs/operations/rca-2026-10-28.md: these nested paths were
+        // silently 401ing because SecurityConfig only permitted the (wrong) top-level
+        // /actuator/readiness and /actuator/liveness paths, not /actuator/health/{readiness,liveness}
+        // where Spring Boot actually serves probe groups — found via a live incident simulation,
+        // not by reading the config.
+        mockMvc.perform(get("/actuator/health/readiness")).andExpect(status().isOk());
+        mockMvc.perform(get("/actuator/health/liveness")).andExpect(status().isOk());
+    }
 }

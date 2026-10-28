@@ -36,6 +36,7 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [Service ownership matrix](docs/architecture/service-ownership-matrix.md) | Tables/APIs/events owned per service |
 | [Event catalog](docs/architecture/event-catalog.md) | Lifecycle events, producers/consumers, schemas |
 | [AWS IAM matrix](docs/architecture/aws-iam-matrix.md) | Least-privilege roles for the analytics, API, and Lambda components |
+| [Terraform](infrastructure/terraform/README.md) | Modules/environments, LocalStack `apply`, drift detection demo |
 
 ### Architecture decisions
 
@@ -63,6 +64,10 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [Operations runbook](docs/operations/runbook.md) | Secrets rotation and general operational procedures |
 | [Messaging runbook](docs/operations/messaging-runbook.md) | SNS/SQS/DLQ operations, LocalStack bootstrap, DLQ drill |
 | [Data pipeline runbook](docs/operations/data-pipeline-runbook.md) | PostgreSQL → S3 → curated pipeline, reconciliation, schema drift |
+| [CI/CD guide](docs/operations/cicd.md) | Pipeline stages, deploy/registry, why SCA is report-only |
+| [SLO](docs/operations/slo.md) | SLIs, targets, error budget, alert |
+| [Incident response](docs/operations/incident-response.md) | Severity levels, escalation, investigation order |
+| [RCA — 2026-10-28](docs/operations/rca-2026-10-28.md) | Real incident simulation (Postgres outage) with a genuine bug found and fixed |
 
 ### AI (M7)
 
@@ -96,7 +101,7 @@ Setup, migrations, seed data, and demo IDs: [database/README.md](database/README
 | M6 | Security engineering | 7–8 | Done |
 | M7 | AI / RAG assistant | 9 | Done |
 | M8 | AWS & data platform | 10 | Done |
-| M9 | CI/CD, Terraform, observability | 11 | Not started |
+| M9 | CI/CD, Terraform, observability | 11 | Done |
 | M10 | Testing & production readiness | 12 | Not started |
 
 ## Repository layout

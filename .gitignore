@@ -63,5 +63,7 @@ infrastructure/aws/lambda/**/function.zip
 .terraform/
 *.tfstate
 *.tfstate.*
+tfplan*
+*.tfplan
 *.tfvars
 !*.tfvars.example

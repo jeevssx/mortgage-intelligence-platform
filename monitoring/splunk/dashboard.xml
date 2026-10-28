@@ -1,0 +1,65 @@
+<form version="1.1" theme="light">
+  <label>Mortgage Intelligence Platform — KPIs &amp; Errors</label>
+  <description>Request rate, error rate, payment API latency, DLQ depth. Queries: searches.spl.</description>
+
+  <fieldset submitTimeRange="true">
+    <input type="time" token="time_range">
+      <default>
+        <earliest>-15m</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+      <title>Request rate by service</title>
+      <chart>
+        <search>
+          <query>index=mortgage_dev | timechart span=1m count by service</query>
+          <earliest>$time_range.earliest$</earliest>
+          <latest>$time_range.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>5xx rate by service</title>
+      <chart>
+        <search>
+          <query>index=mortgage_dev status&gt;=500 | timechart span=1m count by service</query>
+          <earliest>$time_range.earliest$</earliest>
+          <latest>$time_range.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Payment API p95 latency (ms) — SLO: &lt; 500ms</title>
+      <single>
+        <search>
+          <query>index=mortgage_dev service=mortgage-service path="/api/v1/mortgages/*/payments" method=POST | stats p95(durationMs) as p95_latency_ms</query>
+          <earliest>$time_range.earliest$</earliest>
+          <latest>$time_range.latest$</latest>
+        </search>
+        <option name="rangeColors">["0x53a051","0xf8be34","0xdc4e41"]</option>
+        <option name="rangeValues">[500,1000]</option>
+      </single>
+    </panel>
+    <panel>
+      <title>DLQ depth — capstone-mortgage-servicing-dlq-dev</title>
+      <description>Security-relevant panel: a nonzero DLQ depth means events are being rejected/undeliverable, which can indicate a poisoned or forged message (docs/architecture/event-catalog.md, ADR-002).</description>
+      <chart>
+        <search>
+          <query>index=mortgage_dev sourcetype=sqs_queue_depth queue_name="capstone-mortgage-servicing-dlq-dev" | timechart span=1m latest(approximate_number_of_messages) as dlq_depth</query>
+          <earliest>$time_range.earliest$</earliest>
+          <latest>$time_range.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+      </chart>
+    </panel>
+  </row>
+</form>

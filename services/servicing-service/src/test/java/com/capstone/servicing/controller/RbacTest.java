@@ -45,6 +45,15 @@ class RbacTest {
     }
 
     @Test
+    void actuatorHealthProbeGroups_arePublic_withoutAToken() throws Exception {
+        // Regression test for docs/operations/rca-2026-10-28.md — must run in a test class with
+        // no class-level @WithMockUser, since that would mask a permitAll misconfiguration by
+        // satisfying the authenticated() fallback regardless.
+        mockMvc.perform(get("/actuator/health/readiness")).andExpect(status().isOk());
+        mockMvc.perform(get("/actuator/health/liveness")).andExpect(status().isOk());
+    }
+
+    @Test
     @WithMockUser(authorities = "UNDERWRITER")
     void recordEvent_underwriter_returns403() throws Exception {
         mockMvc.perform(post("/api/v1/mortgages/MTG-1001/servicing-events").contentType("application/json").content(EVENT_PAYLOAD))

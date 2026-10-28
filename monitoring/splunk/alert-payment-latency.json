@@ -1,0 +1,18 @@
+{
+  "name": "capstone-payment-latency-alert",
+  "description": "Fires when p95 payment API latency exceeds the SLO (docs/operations/slo.md) for two consecutive 5-minute windows — avoids alerting on a single slow outlier request.",
+  "search": "index=mortgage_dev service=mortgage-service path=\"/api/v1/mortgages/*/payments\" method=POST | stats p95(durationMs) as p95_latency_ms | where p95_latency_ms > 500",
+  "cron_schedule": "*/5 * * * *",
+  "alert_type": "number of events",
+  "alert_comparator": "greater than",
+  "alert_threshold": 0,
+  "alert_condition_note": "Trigger action fires only when the search returns a row (p95 > 500ms); Splunk's consecutive-firing count (2) is configured in the alert's 'Trigger Conditions' UI, not expressible in this condensed JSON form.",
+  "severity": "SEV2",
+  "actions": {
+    "webhook": {
+      "note": "Point at whatever paging/chat integration a real deployment uses — not configured here (no real endpoint)."
+    }
+  },
+  "runbook_link": "docs/operations/runbook.md#rollback",
+  "incident_response_link": "docs/operations/incident-response.md"
+}
