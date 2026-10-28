@@ -16,14 +16,14 @@ flowchart LR
         MS[mortgage-service<br/>Java · Spring Boot · :8080<br/><i>borrowers, mortgages, loans, payments</i>]
         SS[servicing-service<br/>Java · Spring Boot · :8081<br/><i>servicing history, delinquency</i>]
         AS[mortgage-analytics-service<br/>Python · FastAPI · :8000<br/><i>analytics, document upload</i>]
-        AI[mortgage-knowledge-assistant<br/>Python · :8001<br/><i>RAG policy Q&A</i>]
+        AI[mortgage-knowledge-assistant<br/>Python · FastAPI · :8001<br/><i>RAG policy Q&A</i>]
     end
 
     subgraph Data
         PG[(PostgreSQL<br/>mortgage_intel)]
         S3[(Object storage<br/>S3 documents)]
         MQ[[Messaging<br/>SNS / SQS + DLQ]]
-        VS[(Vector index<br/><i>M7</i>)]
+        VS[(In-process TF-IDF index<br/><i>M7 — no external vector DB</i>)]
     end
 
     PORTAL --> GW
@@ -40,8 +40,7 @@ flowchart LR
     MS -->|MortgageCreated, LoanApproved,<br/>PaymentReceived, PaymentMissed| MQ
     MQ --> SS
     SS -->|LoanDelinquent| MQ
-    AI -.-> VS
-    AI -.-> S3
+    AI --> VS
 ```
 
 Solid lines are built; dashed are later milestones (M7 AI assistant, M9 gateway, M8 document-upload
@@ -56,7 +55,7 @@ events). Event flow detail: [event-catalog.md](./event-catalog.md), [ADR-002](..
 | `mortgage-service` | Borrower, mortgage, loan, and payment write paths; publishes lifecycle events | Java 17, Spring Boot | **M4** |
 | `servicing-service` | Servicing history and delinquency reads; consumes lifecycle events into `event_inbox`; publishes `LoanDelinquent` | Java 17, Spring Boot | **M4–M5** |
 | `mortgage-analytics-service` | Normalization, portfolio analytics, document upload to S3 | Python, FastAPI, Pandas, boto3 | **M3** |
-| `mortgage-knowledge-assistant` | Retrieval-augmented Q&A over policy documents | Python, embeddings + LLM | M7 |
+| `mortgage-knowledge-assistant` | Retrieval-augmented Q&A over policy documents | Python, FastAPI; TF-IDF + extractive generation by default, pluggable to a real OpenAI-compatible embeddings/LLM API | **M7** |
 | PostgreSQL | System of record for transactional data | PostgreSQL 15+ | **M2** |
 | Object storage | Document binaries | S3 (LocalStack/moto locally) | **M3** |
 | Messaging | Asynchronous lifecycle events with DLQ | SNS/SQS (LocalStack locally, same code targets real AWS) | **M5** |

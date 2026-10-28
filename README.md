@@ -61,6 +61,13 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [Operations runbook](docs/operations/runbook.md) | Secrets rotation and general operational procedures |
 | [Messaging runbook](docs/operations/messaging-runbook.md) | SNS/SQS/DLQ operations, LocalStack bootstrap, DLQ drill |
 
+### AI (M7)
+
+| Document | Description |
+| --- | --- |
+| [Prompt library](docs/ai/prompt-library.md) | Templates for underwriting, delinquency, security, FAQ, and incident prompts |
+| [AI governance](docs/ai/governance.md) | Human-in-the-loop rules, PII redaction, hallucination controls |
+
 ### Services
 
 | Service | Port | Status | Docs |
@@ -68,7 +75,7 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | mortgage-analytics-service (Python, FastAPI) | 8000 | M3, done | [README](analytics/mortgage-analytics-service/README.md) · [OpenAPI](docs/api/analytics-openapi.yaml) |
 | mortgage-service (Java, Spring Boot) | 8080 | M4, done | [README](services/mortgage-service/README.md) |
 | servicing-service (Java, Spring Boot) | 8081 | M4, done | [README](services/servicing-service/README.md) |
-| mortgage-knowledge-assistant (Python) | 8001 | M7 | [placeholder](ai/mortgage-knowledge-assistant/README.md) |
+| mortgage-knowledge-assistant (Python, FastAPI) | 8001 | M7, done | [README](ai/mortgage-knowledge-assistant/README.md) |
 
 ### Database
 
@@ -84,7 +91,7 @@ Setup, migrations, seed data, and demo IDs: [database/README.md](database/README
 | M4 | Java / Spring backend | 4–5 | Done |
 | M5 | Microservices & events | 6 | Done |
 | M6 | Security engineering | 7–8 | Done |
-| M7 | AI / RAG assistant | 9 | Not started |
+| M7 | AI / RAG assistant | 9 | Done |
 | M8 | AWS & data platform | 10 | Not started |
 | M9 | CI/CD, Terraform, observability | 11 | Not started |
 | M10 | Testing & production readiness | 12 | Not started |
@@ -136,16 +143,29 @@ tests/           api, integration, security, e2e suites
    ```
 
    Try the secure TypeScript consumer: [clients/mortgage-api-consumer/README.md](clients/mortgage-api-consumer/README.md).
-6. Or run the full stack containerized, including LocalStack for SNS/SQS (M5):
+6. Run the AI assistant (Python 3.11+, no API key required — see
+   [ai/mortgage-knowledge-assistant/README.md](ai/mortgage-knowledge-assistant/README.md)):
+
+   ```bash
+   cd ai/mortgage-knowledge-assistant
+   python -m venv .venv && source .venv/bin/activate
+   pip install -r requirements.txt
+   python -m src.ingestion.ingest
+   uvicorn src.api.main:app --reload --port 8001
+   curl -X POST http://localhost:8001/api/v1/assistant/ask -H "Content-Type: application/json" \
+     -d '{"question": "What happens when a payment is 30 days late?"}'
+   ```
+7. Or run the full stack containerized, including LocalStack for SNS/SQS (M5):
 
    ```bash
    docker compose up --build -d
-   docker compose ps                       # all five services "healthy"
+   docker compose ps                       # all six services "healthy"
    curl http://localhost:8080/actuator/health
    curl http://localhost:8081/actuator/health
    curl http://localhost:8000/health
+   curl http://localhost:8001/health
    ```
 
    See [docs/operations/messaging-runbook.md](docs/operations/messaging-runbook.md) to publish a
    test event or force a DLQ delivery.
-7. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).
+8. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).
