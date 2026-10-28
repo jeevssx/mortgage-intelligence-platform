@@ -1,0 +1,20 @@
+{
+  "name": "mortgage-api-consumer",
+  "version": "1.0.0",
+  "description": "TypeScript demo client for mortgage-service and servicing-service (M6 secure API consumer).",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "demo": "ts-node src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
