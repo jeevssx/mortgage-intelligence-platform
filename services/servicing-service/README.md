@@ -28,6 +28,13 @@ Postman: [docs/api/postman/servicing-service.json](../../docs/api/postman/servic
 | `GET` | `/api/v1/mortgages/{mortgageExternalId}/delinquency` | 404 if the mortgage has no delinquency row |
 | `POST` | `/api/v1/mortgages/{mortgageExternalId}/servicing-events` | internal event ingestion; `eventType=LOAN_DELINQUENT` also publishes `LoanDelinquent` |
 
+### Authentication & RBAC (M6)
+
+Every endpoint requires `Authorization: Bearer <jwt>` minted by `mortgage-service`'s
+`POST /api/v1/auth/login` — this service only validates, it has no login endpoint of its own.
+`JWT_SECRET` must be identical to `mortgage-service`'s value. RBAC matrix:
+[docs/security/security-controls.md](../../docs/security/security-controls.md).
+
 ### Lifecycle events (M5)
 
 Polls `SQS_QUEUE_SERVICING_EVENTS` every `SQS_POLL_DELAY_MS` (default 2s) and records each
