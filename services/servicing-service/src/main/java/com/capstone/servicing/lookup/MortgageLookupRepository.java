@@ -2,6 +2,7 @@ package com.capstone.servicing.lookup;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -38,9 +39,16 @@ public class MortgageLookupRepository {
     private final String tableName;
     private final DynamoDbClient client;
 
+    @Autowired
     public MortgageLookupRepository(Environment env) {
         this.tableName = env.getProperty("capstone.lookup.dynamodb-table-mortgage-lookup");
         this.client = buildClient(env);
+    }
+
+    /** Test-only seam — injects an already-built (mock) client instead of one built from env. */
+    MortgageLookupRepository(String tableName, DynamoDbClient client) {
+        this.tableName = tableName;
+        this.client = client;
     }
 
     private DynamoDbClient buildClient(Environment env) {

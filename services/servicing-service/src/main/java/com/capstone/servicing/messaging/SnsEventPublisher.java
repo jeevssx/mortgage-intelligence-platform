@@ -3,6 +3,7 @@ package com.capstone.servicing.messaging;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -28,10 +29,18 @@ public class SnsEventPublisher implements EventPublisher {
     private final String topicArn;
     private final SnsClient snsClient;
 
+    @Autowired
     public SnsEventPublisher(ObjectMapper objectMapper, Environment env) {
         this.objectMapper = objectMapper;
         this.topicArn = env.getProperty("capstone.messaging.sns-topic-mortgage-events");
         this.snsClient = buildClient(env);
+    }
+
+    /** Test-only seam — injects an already-built (mock) client instead of one built from env. */
+    SnsEventPublisher(ObjectMapper objectMapper, String topicArn, SnsClient snsClient) {
+        this.objectMapper = objectMapper;
+        this.topicArn = topicArn;
+        this.snsClient = snsClient;
     }
 
     private SnsClient buildClient(Environment env) {
