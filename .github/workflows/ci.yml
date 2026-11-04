@@ -103,7 +103,7 @@ jobs:
         working-directory: analytics/mortgage-analytics-service
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -166,7 +166,7 @@ jobs:
         working-directory: ai/mortgage-knowledge-assistant
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -186,7 +186,7 @@ jobs:
           - infrastructure/data-pipeline
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
