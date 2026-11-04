@@ -4,6 +4,59 @@ General operational procedures. Messaging-specific operations (SNS/SQS/DLQ):
 [messaging-runbook.md](./messaging-runbook.md). CI/CD security controls:
 [devsecops-baseline.md](./devsecops-baseline.md).
 
+## Startup (M10)
+
+```bash
+docker compose up --build -d postgres db-init mortgage-service servicing-service analytics-service ai-assistant
+```
+
+`db-init` runs the migrations + seed scripts once and exits 0 — every other service's
+`depends_on: db-init: condition: service_completed_successfully` waits for that, not just for
+Postgres to accept connections. Confirm everything is actually ready (container "running" is not
+the same as "ready" for a Spring Boot app doing JPA schema validation at startup):
+
+```bash
+for i in $(seq 1 30); do
+  curl -sf http://localhost:8080/actuator/health/readiness \
+    && curl -sf http://localhost:8081/actuator/health/readiness \
+    && curl -sf http://localhost:8000/health \
+    && curl -sf http://localhost:8001/health && break
+  sleep 3
+done
+```
+
+LocalStack (`localstack`, `localstack-init`) is a dependency of the Java services regardless of
+whether you listed it explicitly — `docker-compose.yml`'s `depends_on` pulls it in. First boot on
+a machine without the images cached takes longer (Lambda deploy inside `localstack-init` zips and
+registers a function — see `infrastructure/aws/lambda/doc-processor/deploy-local.sh`).
+
+**Full reset** (wipe and reseed the database — safe, same idempotent scripts CI uses):
+```bash
+POSTGRES_HOST=localhost POSTGRES_OWNER_PASSWORD=<see docker-compose.yml POSTGRES_OWNER_PASSWORD> \
+  bash database/scripts/reset-dev-db.sh
+```
+
+## Deploy (M9/M10)
+
+See [cicd.md § Deploy](./cicd.md#deploy) for the three deploy jobs
+(`deploy_dev`/`deploy_test`/`deploy_prod_plan`) and exactly what "deployed" means in this build
+(image pushed to the registry, tagged with the commit SHA — there is no persistent dev/test
+cluster provisioned to run it on; `docker-compose.yml` is the standing substitute for that).
+Releases are tagged on `develop`/`main` per the capstone policy
+(`git tag -a v1.0.0-capstone -m "Final capstone submission"`) — see
+[production-readiness.md](./production-readiness.md) for the go-live sign-off a tag represents.
+
+## Common failures (M10)
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| mortgage-service/servicing-service exit immediately on startup | `JWT_SECRET` unset/default outside a `dev`/`test` profile — fails fast by design (`JwtService`/`JwtValidationService`, R-2 in the risk register) | Set `JWT_SECRET` to a real value, or confirm `SPRING_PROFILES_ACTIVE` is `dev`/`test` for local work |
+| A Java service hangs on startup, never reports healthy | Postgres not actually ready yet, or `db-init` hasn't completed — check `docker compose logs db-init` finished with exit 0 | `docker compose ps` to check `db-init`'s exit code; re-run `docker compose up -d` once Postgres is healthy |
+| ai-assistant rejects a token that looks valid (401) | JWT signing-algorithm mismatch between the issuer and validator — see [known-issues.md](./known-issues.md) for the exact bug found and fixed this milestone | Confirm the token's header `alg` is `HS256`; confirm `JWT_SECRET` is byte-for-byte identical across all three services |
+| `terraform apply` fails on an ECS resource ("not yet implemented or pro feature") | LocalStack Community doesn't support ECS | Expected — the `compute` module is gated off by default (`enable_compute = false`); see `infrastructure/terraform/README.md` |
+| `tests/e2e` fails with `429 RATE_LIMITED` on a login step | mortgage-service's `RateLimitFilter` (10 req/60s/IP) tripped by the suite's own repeated logins | Restart `mortgage-service` to clear its in-memory limiter state (or wait 60s) — `tests/e2e` now caches tokens per role for exactly this reason |
+| Local host port 5432 conflicts with a native Postgres install | A Homebrew/system Postgres already bound to `5432` | Query the compose container directly: `docker exec mortgage-intelligence-platform-postgres-1 psql -U mortgage_app -d mortgage_intel` |
+
 ## Secrets rotation (M6)
 
 Secrets in this platform today: `POSTGRES_PASSWORD` / `POSTGRES_OWNER_PASSWORD` (database roles,

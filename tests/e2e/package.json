@@ -1,0 +1,21 @@
+{
+  "name": "mortgage-platform-e2e",
+  "version": "1.0.0",
+  "description": "API-level Playwright + Cucumber E2E journeys (M10) — no UI exists, so Playwright's request context drives HTTP calls directly, per the milestone spec's own guidance for a no-UI platform.",
+  "private": true,
+  "scripts": {
+    "test": "cucumber-js",
+    "cucumber": "cucumber-js",
+    "report": "cucumber-js --format html:reports/cucumber-report.html"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.9.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^20.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}

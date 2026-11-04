@@ -9,6 +9,7 @@ import com.capstone.servicing.repository.EventInboxRepository;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -46,6 +47,7 @@ public class SqsEventConsumer {
     private final String queueUrl;
     private final SqsClient sqsClient;
 
+    @Autowired
     public SqsEventConsumer(ObjectMapper objectMapper, EventInboxRepository eventInboxRepository,
                              MortgageLookupRepository lookupRepository, Environment env) {
         this.objectMapper = objectMapper;
@@ -53,6 +55,16 @@ public class SqsEventConsumer {
         this.lookupRepository = lookupRepository;
         this.queueUrl = env.getProperty("capstone.messaging.sqs-queue-servicing-events");
         this.sqsClient = buildClient(env);
+    }
+
+    /** Test-only seam — injects an already-built (mock) client instead of one built from env. */
+    SqsEventConsumer(ObjectMapper objectMapper, EventInboxRepository eventInboxRepository,
+                      MortgageLookupRepository lookupRepository, String queueUrl, SqsClient sqsClient) {
+        this.objectMapper = objectMapper;
+        this.eventInboxRepository = eventInboxRepository;
+        this.lookupRepository = lookupRepository;
+        this.queueUrl = queueUrl;
+        this.sqsClient = sqsClient;
     }
 
     private SqsClient buildClient(Environment env) {

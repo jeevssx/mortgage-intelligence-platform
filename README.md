@@ -68,6 +68,11 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 | [SLO](docs/operations/slo.md) | SLIs, targets, error budget, alert |
 | [Incident response](docs/operations/incident-response.md) | Severity levels, escalation, investigation order |
 | [RCA — 2026-10-28](docs/operations/rca-2026-10-28.md) | Real incident simulation (Postgres outage) with a genuine bug found and fixed |
+| [Test strategy](docs/operations/test-strategy.md) | Test pyramid, measured coverage per service, E2E strategy for a no-UI platform |
+| [Production readiness](docs/operations/production-readiness.md) | Checklist with evidence, perf smoke, vuln re-scan, go-live recommendation |
+| [Final demo script](docs/operations/final-demo-script.md) | Session 36 6-segment live demo flow, every command rehearsed |
+| [KT / handover checklist](docs/operations/kt-checklist.md) | L1/L2 handover: URLs, credentials, escalation, Splunk queries |
+| [Known issues](docs/operations/known-issues.md) | Bugs found and fixed, spec-vs-implementation deviations, never-exercised-live dependencies |
 
 ### AI (M7)
 
@@ -89,6 +94,12 @@ A Fannie Mae–style **secondary mortgage intelligence platform**, built as a 12
 
 Setup, migrations, seed data, and demo IDs: [database/README.md](database/README.md).
 
+### Testing (M10)
+
+Unit/API/security tests are co-located with each service; [tests/{unit,api,integration,security}/README.md](tests/)
+point into them. [tests/e2e/](tests/e2e/README.md) is the Playwright + Cucumber suite for the
+five mandatory journeys (API-level — no UI exists in this platform).
+
 ## Milestones
 
 | ID | Milestone | Week | Status |
@@ -102,7 +113,7 @@ Setup, migrations, seed data, and demo IDs: [database/README.md](database/README
 | M7 | AI / RAG assistant | 9 | Done |
 | M8 | AWS & data platform | 10 | Done |
 | M9 | CI/CD, Terraform, observability | 11 | Done |
-| M10 | Testing & production readiness | 12 | Not started |
+| M10 | Testing & production readiness | 12 | Done |
 
 ## Repository layout
 
@@ -116,7 +127,7 @@ ai/              mortgage-knowledge-assistant
 infrastructure/  AWS IAM/Lambda, data pipeline scripts (M8), LocalStack bootstrap, Terraform (M9)
 docker/          container definitions
 monitoring/      dashboards and alerts
-tests/           api, integration, security, e2e suites
+tests/           unit, api, integration, security, e2e suites (M10)
 ```
 
 ## Team
@@ -180,4 +191,17 @@ tests/           api, integration, security, e2e suites
    test event or force a DLQ delivery, and
    [docs/operations/data-pipeline-runbook.md](docs/operations/data-pipeline-runbook.md) to run
    the PostgreSQL → S3 → curated pipeline.
-8. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).
+8. Run the E2E suite (Playwright + Cucumber, the five mandatory journeys — no UI exists, so this
+   drives the real HTTP APIs directly):
+
+   ```bash
+   cd tests/e2e
+   npm ci
+   cp .env.example .env
+   npm test
+   ```
+
+   See [tests/e2e/README.md](tests/e2e/README.md) for Node version requirements and known
+   gotchas (login rate limiting, the test-isolation note for running this alongside
+   analytics-service's integration tests).
+9. Never commit secrets or real borrower data. See the [PII rule](docs/requirements/engineering-standards.md#data-handling-pii-rule).

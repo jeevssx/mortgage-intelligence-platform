@@ -258,3 +258,36 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down
+
+  e2e-test:
+    name: E2E (Playwright + Cucumber, M10 journeys)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Bring up full stack (incl. ai-assistant)
+        run: docker compose up --build -d postgres db-init mortgage-service servicing-service ai-assistant
+      - name: Wait for health
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/actuator/health/readiness \
+              && curl -sf http://localhost:8081/actuator/health/readiness \
+              && curl -sf http://localhost:8001/health && break
+            sleep 3
+          done
+      - name: Run the 5 mandatory journeys (J1-J5)
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          cp .env.example .env
+          npm run report
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-report
+          path: tests/e2e/reports/
+      - name: Tear down
+        if: always()
+        run: docker compose down

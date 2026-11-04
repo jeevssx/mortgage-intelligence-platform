@@ -36,6 +36,7 @@ build/
 node_modules/
 dist/
 npm-debug.log*
+tests/e2e/reports/
 
 # --- IDE ---
 .idea/
