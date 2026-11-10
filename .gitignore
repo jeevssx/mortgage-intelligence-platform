@@ -36,6 +36,7 @@ build/
 node_modules/
 dist/
 npm-debug.log*
+tests/e2e/reports/
 
 # --- IDE ---
 .idea/
@@ -53,9 +54,17 @@ desktop.ini
 logs/
 pgdata/
 
+# --- AI assistant derived data ---
+ai/mortgage-knowledge-assistant/.index/
+
+# --- Lambda build artifacts ---
+infrastructure/aws/lambda/**/function.zip
+
 # --- Terraform ---
 .terraform/
 *.tfstate
 *.tfstate.*
+tfplan*
+*.tfplan
 *.tfvars
 !*.tfvars.example

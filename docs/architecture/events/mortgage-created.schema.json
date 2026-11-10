@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MortgageCreated",
+  "type": "object",
+  "required": ["eventId", "eventType", "occurredAt", "schemaVersion", "correlationId", "payload"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "const": "MortgageCreated" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "correlationId": { "type": "string" },
+    "payload": {
+      "type": "object",
+      "required": ["mortgageExternalId", "borrowerExternalId", "originalAmount", "status"],
+      "properties": {
+        "mortgageExternalId": { "type": "string", "pattern": "^MTG-[0-9]{4}$" },
+        "borrowerExternalId": { "type": "string", "pattern": "^BOR-[0-9]{3}$" },
+        "originalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["PENDING", "ACTIVE", "DELINQUENT", "CLOSED"] }
+      }
+    }
+  }
+}

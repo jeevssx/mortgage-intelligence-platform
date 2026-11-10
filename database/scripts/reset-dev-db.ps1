@@ -23,7 +23,7 @@ function Invoke-Psql([string[]]$PsqlArgs) {
 }
 
 Write-Host "Dropping domain tables in $($env:PGDATABASE)@$($env:PGHOST):$($env:PGPORT) ..."
-Invoke-Psql @('-c', 'DROP TABLE IF EXISTS document, delinquency, servicing_history, payment, loan, mortgage, borrower CASCADE;')
+Invoke-Psql @('-c', 'DROP TABLE IF EXISTS app_user, event_inbox, idempotency_record, document, delinquency, servicing_history, payment, loan, mortgage, borrower CASCADE;')
 
 Get-ChildItem (Join-Path $dbRoot 'migrations') -Filter '*.sql' | Sort-Object Name | ForEach-Object {
     Write-Host "Applying $($_.Name)"
@@ -32,6 +32,8 @@ Get-ChildItem (Join-Path $dbRoot 'migrations') -Filter '*.sql' | Sort-Object Nam
 
 Write-Host 'Loading seed_mortgage_data.sql'
 Invoke-Psql @('-f', (Join-Path $dbRoot 'seed\seed_mortgage_data.sql'))
+Write-Host 'Loading seed_app_users.sql'
+Invoke-Psql @('-f', (Join-Path $dbRoot 'seed\seed_app_users.sql'))
 
 Invoke-Psql @('-c', "SELECT 'borrower' t, COUNT(*) FROM borrower UNION ALL SELECT 'mortgage', COUNT(*) FROM mortgage UNION ALL SELECT 'payment', COUNT(*) FROM payment UNION ALL SELECT 'delinquency', COUNT(*) FROM delinquency;")
 Write-Host 'Done.'

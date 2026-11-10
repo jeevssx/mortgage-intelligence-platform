@@ -21,7 +21,7 @@ esac
 PSQL=(psql -v ON_ERROR_STOP=1 -q)
 
 echo "Dropping domain tables in $PGDATABASE@$PGHOST:$PGPORT ..."
-"${PSQL[@]}" -c "DROP TABLE IF EXISTS document, delinquency, servicing_history, payment, loan, mortgage, borrower CASCADE;"
+"${PSQL[@]}" -c "DROP TABLE IF EXISTS app_user, event_inbox, idempotency_record, document, delinquency, servicing_history, payment, loan, mortgage, borrower CASCADE;"
 
 for f in migrations/*.sql; do
   echo "Applying $f"
@@ -30,6 +30,8 @@ done
 
 echo "Loading seed/seed_mortgage_data.sql"
 "${PSQL[@]}" -f seed/seed_mortgage_data.sql
+echo "Loading seed/seed_app_users.sql"
+"${PSQL[@]}" -f seed/seed_app_users.sql
 
 "${PSQL[@]}" -c "SELECT 'borrower' t, COUNT(*) FROM borrower UNION ALL SELECT 'mortgage', COUNT(*) FROM mortgage UNION ALL SELECT 'loan', COUNT(*) FROM loan UNION ALL SELECT 'payment', COUNT(*) FROM payment UNION ALL SELECT 'servicing_history', COUNT(*) FROM servicing_history UNION ALL SELECT 'delinquency', COUNT(*) FROM delinquency UNION ALL SELECT 'document', COUNT(*) FROM document;"
 echo "Done."

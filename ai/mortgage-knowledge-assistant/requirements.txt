@@ -1,0 +1,13 @@
+# Runtime
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+python-dotenv==1.2.4
+httpx==0.28.1
+scikit-learn==1.9.1
+numpy==2.3.5
+PyJWT==2.15.1
+
+# Test
+pytest==9.1.1
+pytest-cov==7.1.0

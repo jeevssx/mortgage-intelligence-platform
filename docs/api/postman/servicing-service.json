@@ -1,0 +1,40 @@
+{
+  "info": {
+    "name": "servicing-service (M4)",
+    "description": "Manual test collection for services/servicing-service, port 8081. Run against the seeded dev database (database/README.md).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/actuator/health" }
+    },
+    {
+      "name": "Servicing history (MTG-1001, ACTIVE)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mortgages/MTG-1001/servicing-history" }
+    },
+    {
+      "name": "Delinquency (MTG-1002, DELINQUENT >=30 DPD)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mortgages/MTG-1002/delinquency" }
+    },
+    {
+      "name": "Record internal servicing event",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/mortgages/MTG-1001/servicing-events",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"eventType\": \"DOCUMENT_UPLOADED\",\n  \"description\": \"Income verification received\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Servicing history (unknown -> 404)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mortgages/MTG-9999/servicing-history" }
+    }
+  ]
+}

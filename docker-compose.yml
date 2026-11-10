@@ -1,0 +1,156 @@
+# Local dev/demo stack for M5: PostgreSQL + LocalStack (SNS/SQS) + all three application
+# services, containerized. See docs/operations/messaging-runbook.md for operating instructions.
+#
+#   docker compose up --build -d
+#   docker compose ps
+#   curl http://localhost:8080/actuator/health
+#   curl http://localhost:8081/actuator/health
+#   curl http://localhost:8000/health
+#
+# All passwords below are throwaway, container-local dev placeholders (same pattern as
+# .github/workflows/ci.yml) — never used outside this compose network.
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: compose-superuser-password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  db-init:
+    image: postgres:15
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./:/workspace:ro
+    working_dir: /workspace
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: compose-superuser-password
+      POSTGRES_OWNER_PASSWORD: compose-owner-password
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -euo pipefail
+        psql -v ON_ERROR_STOP=1 -v owner_password=compose-owner-password -v app_password=compose-app-password \
+          -f database/schema/000_roles_and_database.sql
+        POSTGRES_HOST=postgres bash database/scripts/reset-dev-db.sh
+
+  localstack:
+    image: localstack/localstack:3
+    environment:
+      SERVICES: sns,sqs,s3,dynamodb,lambda,iam,logs
+      DEFAULT_REGION: us-east-1
+    ports:
+      - "4566:4566"
+    volumes:
+      # Lambda's docker executor needs this to spin up execution containers (M8 task 8.3).
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  localstack-init:
+    image: amazon/aws-cli:2.17.24
+    depends_on:
+      localstack:
+        condition: service_healthy
+    volumes:
+      - ./infrastructure:/infrastructure:ro
+    environment:
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -euo pipefail
+        yum install -y -q zip >/dev/null
+        bash /infrastructure/localstack/bootstrap.sh
+        bash /infrastructure/aws/lambda/doc-processor/deploy-local.sh
+
+  mortgage-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mortgage-service
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+      localstack-init:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: mortgage_intel
+      POSTGRES_USER: mortgage_app
+      POSTGRES_PASSWORD: compose-app-password
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localstack:4566
+      SNS_TOPIC_MORTGAGE_EVENTS: arn:aws:sns:us-east-1:000000000000:capstone-mortgage-lifecycle-dev
+      JWT_SECRET: compose-dev-only-shared-jwt-secret-never-use-outside-this-stack
+
+  servicing-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.servicing-service
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+      localstack-init:
+        condition: service_completed_successfully
+    ports:
+      - "8081:8081"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: mortgage_intel
+      POSTGRES_USER: mortgage_app
+      POSTGRES_PASSWORD: compose-app-password
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localstack:4566
+      SNS_TOPIC_MORTGAGE_EVENTS: arn:aws:sns:us-east-1:000000000000:capstone-mortgage-lifecycle-dev
+      SQS_QUEUE_SERVICING_EVENTS: http://localstack:4566/000000000000/capstone-mortgage-servicing-dev
+      JWT_SECRET: compose-dev-only-shared-jwt-secret-never-use-outside-this-stack
+      DYNAMODB_TABLE_MORTGAGE_LOOKUP: MortgageLookup-dev
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.analytics-service
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: mortgage_intel
+      POSTGRES_USER: mortgage_app
+      POSTGRES_PASSWORD: compose-app-password
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      S3_BUCKET_DOCUMENTS: capstone-mortgage-docs-dev
+
+  ai-assistant:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ai-assistant
+    ports:
+      - "8001:8001"
+    environment:
+      # No LLM_API_KEY set: runs in local TF-IDF + extractive mode (see service README) — no
+      # external API cost, no network dependency beyond the containers in this stack.
+      JWT_SECRET: compose-dev-only-shared-jwt-secret-never-use-outside-this-stack

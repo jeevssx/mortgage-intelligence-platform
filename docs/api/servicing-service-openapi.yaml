@@ -1,0 +1,85 @@
+openapi: 3.1.0
+info:
+  title: servicing-service
+  description: Servicing history and delinquency read APIs, plus internal event ingestion.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8081
+paths:
+  /actuator/health:
+    get:
+      summary: Health
+      responses:
+        "200": { description: OK }
+  /api/v1/mortgages/{mortgageExternalId}/servicing-history:
+    get:
+      summary: Servicing history, ordered by event_time ascending
+      parameters:
+        - { name: mortgageExternalId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/ServicingHistoryResponse" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/mortgages/{mortgageExternalId}/delinquency:
+    get:
+      summary: Delinquency snapshot
+      parameters:
+        - { name: mortgageExternalId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/DelinquencyResponse" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/mortgages/{mortgageExternalId}/servicing-events:
+    post:
+      summary: Record an internal servicing event; eventType=LOAN_DELINQUENT also publishes LoanDelinquent
+      parameters:
+        - { name: mortgageExternalId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ServicingEventRequest" }
+      responses:
+        "201": { description: Created }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+components:
+  responses:
+    Error:
+      description: Error envelope
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        correlationId: { type: string }
+        timestamp: { type: string, format: date-time }
+    ServicingHistoryEvent:
+      type: object
+      properties:
+        eventTime: { type: string, format: date-time }
+        eventType: { type: string }
+        description: { type: string }
+    ServicingHistoryResponse:
+      type: object
+      properties:
+        mortgageExternalId: { type: string }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/ServicingHistoryEvent" }
+    DelinquencyResponse:
+      type: object
+      properties:
+        mortgageExternalId: { type: string }
+        status: { type: string, enum: [PENDING, ACTIVE, DELINQUENT, CLOSED] }
+        delinquentSince: { type: string, format: date }
+        daysPastDue: { type: integer }
+        severity: { type: string, enum: [LOW, MODERATE, HIGH, SEVERE] }
+    ServicingEventRequest:
+      type: object
+      required: [eventType]
+      properties:
+        eventType: { type: string }
+        description: { type: string }

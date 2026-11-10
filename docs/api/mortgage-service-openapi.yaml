@@ -1,0 +1,164 @@
+openapi: 3.1.0
+info:
+  title: mortgage-service
+  description: Borrower, mortgage, and payment APIs. Error envelope and IDs per guides/standards.md.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080
+paths:
+  /actuator/health:
+    get:
+      summary: Health
+      responses:
+        "200": { description: OK }
+  /api/v1/borrowers:
+    post:
+      summary: Create borrower
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BorrowerRequest" }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/BorrowerResponse" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/borrowers/{borrowerExternalId}:
+    get:
+      summary: Get borrower
+      parameters:
+        - { name: borrowerExternalId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/BorrowerResponse" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/mortgages:
+    post:
+      summary: Create mortgage (optionally with nested loan)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MortgageRequest" }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/MortgageResponse" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+    get:
+      summary: List mortgages
+      parameters:
+        - { name: borrowerId, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        "200": { description: OK }
+  /api/v1/mortgages/{mortgageExternalId}:
+    get:
+      summary: Get mortgage
+      parameters:
+        - { name: mortgageExternalId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/MortgageResponse" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/mortgages/{mortgageExternalId}/payments:
+    post:
+      summary: Post a payment (transactional; publishes PaymentReceived/PaymentMissed)
+      parameters:
+        - { name: mortgageExternalId, in: path, required: true, schema: { type: string } }
+        - { name: X-Correlation-Id, in: header, schema: { type: string } }
+        - { name: Idempotency-Key, in: header, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentRequest" }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/PaymentResponse" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { description: Duplicate Idempotency-Key, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+    get:
+      summary: List payments
+      parameters:
+        - { name: mortgageExternalId, in: path, required: true, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        "200": { description: OK }
+components:
+  responses:
+    Error:
+      description: Error envelope
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        correlationId: { type: string }
+        timestamp: { type: string, format: date-time }
+    BorrowerRequest:
+      type: object
+      required: [borrowerExternalId, firstName, lastName, email]
+      properties:
+        borrowerExternalId: { type: string, pattern: "^BOR-[0-9]{3}$" }
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        dateOfBirth: { type: string, format: date }
+    BorrowerResponse:
+      allOf:
+        - { $ref: "#/components/schemas/BorrowerRequest" }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+    LoanRequest:
+      type: object
+      required: [loanExternalId, interestRate, termMonths]
+      properties:
+        loanExternalId: { type: string, pattern: "^LOAN-[0-9]{4}$" }
+        interestRate: { type: number }
+        termMonths: { type: integer }
+        underwritingDecision: { type: string, enum: [PENDING, APPROVED, DECLINED] }
+    MortgageRequest:
+      type: object
+      required: [mortgageExternalId, borrowerExternalId, originalAmount, outstandingBalance, originationDate]
+      properties:
+        mortgageExternalId: { type: string, pattern: "^MTG-[0-9]{4}$" }
+        borrowerExternalId: { type: string, pattern: "^BOR-[0-9]{3}$" }
+        originalAmount: { type: number }
+        outstandingBalance: { type: number }
+        originationDate: { type: string, format: date }
+        loan: { $ref: "#/components/schemas/LoanRequest" }
+    MortgageResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        mortgageExternalId: { type: string }
+        borrowerExternalId: { type: string }
+        status: { type: string, enum: [PENDING, ACTIVE, DELINQUENT, CLOSED] }
+        originalAmount: { type: number }
+        outstandingBalance: { type: number }
+        originationDate: { type: string, format: date }
+    PaymentRequest:
+      type: object
+      required: [dueDate, amount, status]
+      properties:
+        dueDate: { type: string, format: date }
+        paidDate: { type: string, format: date }
+        amount: { type: number }
+        status: { type: string, enum: [SCHEDULED, POSTED, FAILED, REVERSED] }
+    PaymentResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        mortgageExternalId: { type: string }
+        dueDate: { type: string, format: date }
+        paidDate: { type: string, format: date }
+        amount: { type: number }
+        status: { type: string }
+        outstandingBalanceAfter: { type: number }
