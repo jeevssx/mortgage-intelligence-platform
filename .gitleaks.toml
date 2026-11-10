@@ -1,0 +1,13 @@
+title = "gitleaks config — mortgage-intelligence-platform"
+
+[extend]
+# Keep every built-in detection rule; we're only adding allowlist exceptions below.
+useDefault = true
+
+[allowlist]
+description = "Known-safe, synthetic test-only fixture values — not real secrets. Matched by value so the exemption applies regardless of which commit in history introduced it (gitleaks scans full history, not just the current tree)."
+regexes = [
+  # ai/mortgage-knowledge-assistant/tests/test_assistant_api.py — a hardcoded JWT secret used
+  # only to exercise the require_auth() "configured" code path in a unit test.
+  '''test-secret-at-least-32-bytes-long-xx''',
+]

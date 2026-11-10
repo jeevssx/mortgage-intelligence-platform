@@ -8,6 +8,14 @@ function randomSuffix(): string {
   return String(9000 + Math.floor(Math.random() * 900)); // MTG-9000..9899 — avoids seed/demo IDs
 }
 
+// Seed data uses BOR-001..BOR-008 (database/seed/seed_mortgage_data.sql). randomSuffix().slice(-3)
+// lands in 000..899 — the same space, giving a ~0.9%-per-run chance of BORROWER_ALREADY_EXISTS
+// (hit for real on a GitHub Actions run). 900..999 is deterministically disjoint from the seed
+// range, not just low-probability.
+function randomBorrowerSuffix(): string {
+  return String(900 + Math.floor(Math.random() * 100)); // BOR-900..BOR-999
+}
+
 Given("the user {string} is authenticated", async function (this: World, role: string) {
   const cached = getCachedToken(role);
   if (cached) {
@@ -22,7 +30,7 @@ Given("the user {string} is authenticated", async function (this: World, role: s
 });
 
 When("the user creates a new borrower", async function (this: World) {
-  const suffix = randomSuffix().slice(-3);
+  const suffix = randomBorrowerSuffix();
   const borrower = {
     borrowerExternalId: `BOR-${suffix}`,
     firstName: "E2E",
